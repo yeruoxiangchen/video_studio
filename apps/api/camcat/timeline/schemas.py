@@ -46,7 +46,7 @@ class BuildMediaRef(StrictModel):
     height: int = Field(ge=0)
     video_codec: str | None = None
     audio_codec: str | None = None
-    retention_class: Literal["transient_4h", "library"]
+    retention_class: Literal["transient_4h", "library", "generated"]
 
 
 class ProtectedSourceRange(StrictModel):
@@ -76,6 +76,7 @@ class CompiledVideoSegment(StrictModel):
     render_start_frame: int = Field(ge=0)
     render_duration_frames: int = Field(gt=0)
     speed: float = Field(default=1.0, ge=0.1, le=8.0)
+    audio_volume: float = Field(default=1.0, ge=0, le=4)
     transform: Transform = Field(default_factory=Transform)
     reason: str = ""
     evidence: list[dict[str, Any]] = Field(default_factory=list)

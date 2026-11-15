@@ -1,0 +1,22 @@
+{
+  "revision": "rtmlib-0.0.14-rtmpose-s-body7-v1",
+  "repository": "https://github.com/Tau-J/rtmlib",
+  "license": "Apache-2.0",
+  "python": "ocr-venv/bin/python",
+  "directory": "models/geometry/hub/checkpoints",
+  "libraries": {"rtmlib": "0.0.14", "onnxruntime": "1.32.0", "opencv-python": "5.0.0.93"},
+  "models": {
+    "detector": {
+      "url": "https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/onnx_sdk/yolox_tiny_8xb8-300e_humanart-6f3252f9.zip",
+      "file": "yolox_tiny_8xb8-300e_humanart-6f3252f9.onnx",
+      "bytes": 20283006,
+      "sha256": "ceb11c07298f95c50d7c5abeb906d03340c85f23aa79e3e66966e7fb6c307250"
+    },
+    "pose": {
+      "url": "https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/onnx_sdk/rtmpose-s_simcc-body7_pt-body7_420e-256x192-acd4a1ef_20230504.zip",
+      "file": "rtmpose-s_simcc-body7_pt-body7_420e-256x192-acd4a1ef_20230504.onnx",
+      "bytes": 21890172,
+      "sha256": "9aeb635b83f86aea45cf45d85798f7eba1a162de8e0d721c44e54fe5eebaf47d"
+    }
+  }
+}

@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import {workflowPresentation} from "./src/workflowPresentation";
 import {
   Activity,
   ArrowUp,
@@ -53,6 +54,7 @@ import {
   type WorkspaceTraceRow,
 } from "./src/camcatApi";
 import type { AudioTrack, TextTrack, VideoTrack } from "./src/generated/api";
+import LocalizationPanel from "./src/LocalizationPanel";
 
 type EvidenceKind = "video" | "doc" | "image";
 
@@ -125,6 +127,7 @@ type WorkspaceStatus = "idle" | "uploading" | "searching" | "rendering" | "ready
 export type ProductPage = "editing" | "processing" | "render";
 
 type WorkspaceController = {
+  api: ReturnType<typeof createCamCatApiClient>;
   apiBase: string;
   query: string;
   setQuery: (value: string) => void;
@@ -157,6 +160,7 @@ type WorkspaceController = {
   handleQueryImage: (file: File) => Promise<void>;
   handleRollback: () => Promise<void>;
   handleRefreshSession: () => Promise<void>;
+  handleLocalizedRenderReady: (job: JobResponse) => void;
   handleReorderClip: (sourceId: string, targetId: string) => Promise<void>;
   handleTrimClip: (clipId: string) => Promise<void>;
   handleSplitClip: (clipId: string) => Promise<void>;
@@ -307,6 +311,10 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
       const analyzedMedia = (analysis.result?.source_media as SourceUploadResponse["media"] | undefined) ?? result.media;
       const completedUpload = { ...result, status: "succeeded", media: analyzedMedia };
       setSourceUpload(completedUpload);
+      const session = await api.createEditingSession(undefined, query.trim() || "原片剪辑与译制", result.job_id, project?.project_id);
+      setEditingSession(session);
+      setAgentRun(undefined);
+      setAuditEvents([]);
       const first = analyzedMedia[0];
       const completed: UploadedVideoResponse = {
         video_id: first.media_id,
@@ -345,11 +353,46 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
       setProgress(undefined);
       setLiveTraceRows([]);
       setProgressLabel("正在理解发布目标与叙事意图");
+      let session = editingSession;
+      if (!session && sourceUpload) {
+        session = await api.createEditingSession(undefined, trimmedQuery, sourceUpload.job_id, project?.project_id);
+        setEditingSession(session);
+      }
+      if (session) {
+        const dispatched = await api.dispatchAgentAction(session.editing_session_id, session.state_version, trimmedQuery);
+        setEditingSession(dispatched.session);
+        if (dispatched.action === "clarify") {
+          setProgressLabel(dispatched.message || "请说明目标语言，以及需要翻译还是翻译并配音。");
+          setStatus("ready");
+          return;
+        }
+        if (dispatched.job) {
+          setAgentRun(undefined);
+          setProgressLabel(dispatched.message);
+          let job = dispatched.job;
+          while (true) {
+            setActiveJob(job);
+            const completed = await waitForJob(api.getJob, job.job_id, {onProgress: current => {
+              setActiveJob(current); setProgress(current.progress);
+              setProgressLabel(`${current.kind === "translate_subtitles" ? "正在翻译字幕" : "正在生成配音"} · ${Math.round(current.progress * 100)}%`);
+            }});
+            const next = completed.result?.next_job_id;
+            if (typeof next !== "string") break;
+            job = await api.getJob(next);
+          }
+          const updated = await api.getEditingSession(session.editing_session_id);
+          setEditingSession(updated);
+          setAuditEvents((await api.getEditingSessionAudit(updated.editing_session_id)).items);
+          setProgressLabel("译制草稿已写入时间线。打开“译制”可试听、校订并确认交付审校。");
+          setStatus("ready");
+          return;
+        }
+      }
       const result = await runSearchAndPlan(api, {
         query: trimmedQuery,
         sourceJobId: sourceUpload?.job_id,
         projectId: project?.project_id,
-        currentSession: editingSession,
+        currentSession: session,
         onSessionCreated: setEditingSession,
         queryImageBase64,
         topK: searchDepth === "deep" ? 16 : 8,
@@ -476,9 +519,10 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
     setError(undefined);
   }
 
-  async function handleRefreshSession() {
+  const handleRefreshSession = useCallback(async () => {
     if (!editingSession) return;
-    setStatus("searching");
+    const agentBusy = searchInFlight.current;
+    if (!agentBusy) setStatus("searching");
     try {
       const current = await api.getEditingSession(editingSession.editing_session_id);
       if (current.state_version !== editingSession.state_version) {
@@ -488,13 +532,15 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
       setEditingSession(current);
       setAuditEvents((await api.getEditingSessionAudit(current.editing_session_id)).items);
       setError(undefined);
-      setProgressLabel("已加载最新版本，输入内容已保留，请确认后重新发送。");
-      setStatus("ready");
+      if (!agentBusy) {
+        setProgressLabel("已加载最新版本，草稿修改已保留。");
+        setStatus("ready");
+      }
     } catch (caught) {
       setError(errorMessage(caught));
       setStatus("error");
     }
-  }
+  }, [api, editingSession]);
 
   async function handleRollback() {
     if (!editingSession || editingSession.state_version <= 1) return;
@@ -576,6 +622,7 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
 
   return {
     apiBase,
+    api,
     query,
     setQuery,
     status,
@@ -607,6 +654,7 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
     handleQueryImage,
     handleRollback,
     handleRefreshSession,
+    handleLocalizedRenderReady: setRenderResult,
     handleReorderClip,
     handleTrimClip,
     handleSplitClip,
@@ -680,7 +728,7 @@ function MediaProcessingPage({ workspace }: { workspace: WorkspaceController }) 
   ];
 
   return (
-    <ProductPageFrame title="媒体处理状态" subtitle={workspace.project?.name ?? "CamCat 项目"}>
+    <ProductPageFrame title="媒体处理状态" subtitle={workspace.project?.name ?? "剪辑项目"}>
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(380px,0.9fr)_minmax(460px,1.1fr)] gap-5 overflow-hidden px-8 pb-8">
         <section className="min-h-0 overflow-y-auto rounded-[20px] border border-[#272b2f] bg-[#090a0b] p-7">
           <div className="flex items-center justify-between border-b border-[#22262a] pb-5">
@@ -754,7 +802,7 @@ function RenderStatusPage({ workspace }: { workspace: WorkspaceController }) {
     ? `${output.width} × ${output.height}`
     : canvasRatio(workspace.editingSession);
   return (
-    <ProductPageFrame title="导出 / 渲染状态" subtitle={workspace.project?.name ?? "CamCat 项目"}>
+    <ProductPageFrame title="导出 / 渲染状态" subtitle={workspace.project?.name ?? "剪辑项目"}>
       <div className="min-h-0 flex-1 px-8 pb-8">
         <section className="mx-auto flex h-full max-w-[1320px] flex-col rounded-[22px] border border-[#292d31] bg-[#090a0b] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.35)]">
           <div className="flex items-center justify-between border-b border-[#22262a] pb-6">
@@ -771,7 +819,7 @@ function RenderStatusPage({ workspace }: { workspace: WorkspaceController }) {
                 <div className="font-mono text-3xl font-semibold text-white">{Math.round(progress * 100)}%</div>
               </div>
               <div className="mt-7 h-3 overflow-hidden rounded-full bg-[#24282c]"><div className={`h-full rounded-full transition-all duration-500 ${failed ? "bg-[#ef4444]" : "bg-[#45d69a]"}`} style={{ width: `${progress * 100}%` }} /></div>
-              <p className="mt-4 text-[13px] text-[#929ca5]">{workspace.error ?? workspace.progressLabel ?? (job ? "正在等待 FFmpeg Worker" : "当前剪辑版本已就绪，确认后开始真实 FFmpeg 渲染")}</p>
+              <p role={failed ? "alert" : "status"} className="mt-4 text-[13px] text-[#929ca5]">{workspace.error ?? workspace.progressLabel ?? (job ? "正在等待 FFmpeg Worker" : "当前剪辑版本已就绪，确认后开始真实 FFmpeg 渲染")}</p>
               <dl className="mt-8 grid grid-cols-[110px_1fr] gap-y-5 border-t border-[#22262a] pt-7 text-[14px]">
                 <dt className="text-[#707983]">状态版本</dt><dd className="text-white">v{workspace.editingSession?.state_version ?? 1}</dd>
                 <dt className="text-[#707983]">输出画幅</dt><dd className="text-white">{resolution}</dd>
@@ -859,7 +907,7 @@ function TopHeader({ workspace }: { workspace: WorkspaceController }) {
       <div className="flex min-w-0 items-center gap-3">
         <button type="button" onClick={workspace.onBack} aria-label="返回项目列表" className="flex shrink-0 items-center gap-2 pr-2 text-white transition hover:opacity-80">
           <PixelCatLogo className="h-8 w-8" />
-          <span className="text-[26px] font-black leading-none tracking-normal">CamCat</span>
+          <span className="text-[26px] font-black leading-none tracking-normal">剪辑工作台</span>
         </button>
         <span className="h-5 w-px shrink-0 bg-[#25282b]" />
         <button
@@ -938,10 +986,10 @@ function TopHeader({ workspace }: { workspace: WorkspaceController }) {
           <ChevronDown className="h-3.5 w-3.5 opacity-60" />
         </button>
         <div className="ml-2 flex h-10 items-center gap-2 rounded-full border border-[#202326] bg-[#0b0c0d] px-1.5 pr-3">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-[#151719] ring-1 ring-white/10" aria-label="CamCat user avatar">
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-[#151719] ring-1 ring-white/10" aria-label="本地用户">
             <PixelCatLogo className="h-4 w-4" />
           </span>
-          <span className="hidden text-[11px] font-medium text-[#dce2e7] xl:block">CamCat</span>
+          <span className="hidden text-[11px] font-medium text-[#dce2e7] xl:block">剪辑工作台</span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#34d399] shadow-[0_0_10px_rgba(52,211,153,0.45)]" />
         </div>
       </div>
@@ -1234,7 +1282,7 @@ function ArtifactsPanel({ workspace }: { workspace: WorkspaceController }) {
       ? `${workspace.renderResult.result.width}×${workspace.renderResult.result.height}`
       : canvasRatio(workspace.editingSession);
     artifacts.push({
-      title: workspace.renderResult.result.output_url.split("/").pop() ?? "camcat-render.mp4",
+      title: workspace.renderResult.result.output_url.split("/").pop() ?? "video-render.mp4",
       meta: workspace.renderResult.result.duration_seconds
         ? `${workspace.renderResult.result.duration_seconds.toFixed(1)}s · ${renderedResolution}`
         : renderedResolution,
@@ -1435,7 +1483,7 @@ function EditingPlan({ clips, subtitles, workspace, activeTab, onTabChange }: { 
   return (
     <div className="shrink-0 rounded-[12px] border border-[#1b1d1f] bg-[#080909]">
       <div className="flex h-10 items-center gap-6 border-b border-[#1b1d1f] px-4">
-        {["Editing Plan", "Segments", "Subtitles", "Audit Log"].map((tab, index) => (
+        {["Editing Plan", "Segments", "Subtitles", "译制", "Audit Log"].map((tab, index) => (
           <button
             key={tab}
             type="button"
@@ -1451,7 +1499,12 @@ function EditingPlan({ clips, subtitles, workspace, activeTab, onTabChange }: { 
           </button>
         ))}
       </div>
-      <div className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {activeTab === "译制" ? (workspace.editingSession ? <LocalizationPanel
+        key={workspace.editingSession.editing_session_id} api={workspace.api} session={workspace.editingSession}
+        onChanged={workspace.handleRefreshSession}
+        onRenderReady={workspace.handleLocalizedRenderReady}
+        disabled={["uploading", "searching", "rendering"].includes(workspace.status)}
+      /> : <p className="px-4 py-3 text-xs text-[#8b949e]">请先通过上传原片建立剪辑会话。</p>) : <div className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {activeTab === "Audit Log" && workspace.auditEvents.map((event) => (
           <div key={event.audit_event_id} className="h-[58px] min-w-[220px] rounded-[12px] border border-[#25282b] bg-[#111213] p-3 text-left">
             <div className="truncate text-[12px] font-medium text-[#e8edf1]">{event.event_type}</div>
@@ -1505,7 +1558,7 @@ function EditingPlan({ clips, subtitles, workspace, activeTab, onTabChange }: { 
         <button type="button" onClick={() => { workspace.setQuery("请从素材库再召回一个匹配片段，并追加到当前剪辑计划"); document.getElementById("agent-query")?.focus(); }} aria-label="通过 Agent 追加片段" className="grid h-[58px] w-[58px] shrink-0 place-items-center rounded-[12px] border border-[#25282b] bg-[#0e0f10] text-[#8b949e] transition hover:bg-[#141516] hover:text-white">
           <Plus className="h-5 w-5" />
         </button>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -1670,25 +1723,14 @@ function EmptyTrackLabel({ text }: { text: string }) {
 
 function AgentChatPanel({ workspace }: { workspace: WorkspaceController }) {
   const runView = workspace.agentRun ? mapAgenticRunToWorkspace(workspace.agentRun) : undefined;
-  const assistantStatus =
-    workspace.status === "uploading"
-      ? "上传中"
-      : workspace.status === "searching"
-        ? "检索中"
-        : workspace.status === "rendering"
-          ? "渲染中"
-          : workspace.status === "error"
-            ? "需处理"
-            : runView
-              ? "已完成"
-              : "待执行";
+  const {assistantStatus} = workflowPresentation(workspace);
   const toolRows = runView?.trace.length ? runView.trace.slice(0, 5) : [];
 
   return (
     <aside className="flex min-h-0 flex-col bg-[#080909] max-[1180px]:hidden">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#1b1d1f] px-4">
         <div className="text-[10px] font-semibold tracking-[0.2em] text-[#858f99]">AGENT CHAT</div>
-        <span aria-label="本地 CamCat 用户" className="grid h-8 w-8 place-items-center rounded-[10px] border border-[#25282b] bg-[#0d0e0f] text-[#8b949e]">
+        <span aria-label="本地工作台用户" className="grid h-8 w-8 place-items-center rounded-[10px] border border-[#25282b] bg-[#0d0e0f] text-[#8b949e]">
           <User className="h-4 w-4" />
         </span>
       </div>
@@ -1703,7 +1745,7 @@ function AgentChatPanel({ workspace }: { workspace: WorkspaceController }) {
 
         <div className="mt-5 space-y-2.5">
           <div className="flex items-center justify-between text-[10px] text-[#6b7280]">
-            <span>ASSISTANT / CAMCAT</span>
+            <span>ASSISTANT / AGENT</span>
             <span className={workspace.status === "error" ? "text-[#fca5a5]" : "text-[#34d399]"}>
               {assistantStatus}
             </span>
@@ -1715,7 +1757,7 @@ function AgentChatPanel({ workspace }: { workspace: WorkspaceController }) {
               {workspace.progress !== undefined && <div className="mt-2 h-1 overflow-hidden rounded-full bg-black/30"><div className="h-full rounded-full bg-[#6cc7ff] transition-all" style={{ width: `${workspace.progress * 100}%` }} /></div>}
             </div>
           )}
-          <CreateTaskBoardCard runView={runView} workspace={workspace} />
+          <CreateTaskBoardCard workspace={workspace} />
           {toolRows.map((row) => (
             <ToolCallRow key={`${row.name}-${row.time}`} name={row.name} time={row.time} status={row.status} />
           ))}
@@ -1732,15 +1774,12 @@ function AgentChatPanel({ workspace }: { workspace: WorkspaceController }) {
 }
 
 function BackendStatusCard({ workspace }: { workspace: WorkspaceController }) {
-  const statusText =
-    workspace.uploadedVideo?.status ??
-    (workspace.agentRun ? "agentic_run_ready" : "waiting_for_action");
-
+  const view = workflowPresentation(workspace);
   return (
     <div className="grid grid-cols-3 gap-2">
-      <MiniStatusPill icon={Upload} label="Media DAG" value={statusText} active={Boolean(workspace.uploadedVideo)} />
-      <MiniStatusPill icon={Search} label="Retrieval" value={workspace.agentRun ? "multimodal" : "idle"} active={Boolean(workspace.agentRun)} />
-      <MiniStatusPill icon={Scissors} label="Render" value={workspace.renderResult?.status ?? "not started"} active={Boolean(workspace.renderResult)} />
+      <MiniStatusPill icon={Upload} label="原片" value={workspace.uploadedVideo ? "已分析" : "待上传"} active={Boolean(workspace.uploadedVideo)} />
+      <MiniStatusPill icon={Search} label={view.workflow} value={workspace.status === "searching" ? "处理中" : view.stateLabel} active={view.stateLabel !== "待执行"} />
+      <MiniStatusPill icon={Scissors} label="成片" value={view.rendered ? "已导出" : workspace.status === "rendering" ? "处理中" : "待导出"} active={Boolean(view.rendered)} />
     </div>
   );
 }
@@ -1769,41 +1808,19 @@ function MiniStatusPill({
   );
 }
 
-function CreateTaskBoardCard({
-  runView,
-  workspace,
-}: {
-  runView?: ReturnType<typeof mapAgenticRunToWorkspace>;
-  workspace: WorkspaceController;
-}) {
-  const selected = runView?.selectedSegment;
-  const payload = {
-    summary: workspace.query,
-    route: runView?.routeLabel ?? "retrieval_then_editing",
-    selected_segment: selected?.segment_id ?? null,
-    multimodal_embedding: "Qwen3-VL-Embedding-8B / 2048d MRL",
-    milvus_retrieval: Boolean(runView?.evidence.length),
-    ffmpeg_export_ready: workspace.canRender,
-  };
-
+function CreateTaskBoardCard({workspace}: {workspace: WorkspaceController}) {
+  const view = workflowPresentation(workspace);
   return (
     <div className="overflow-hidden rounded-[12px] border border-[#24272a] bg-[#0c0d0e]">
       <div className="flex h-9 items-center justify-between border-b border-[#202326] px-3">
-        <div className="flex items-center gap-2 text-[12px] font-medium text-[#e1e7ec]">
-          <Sparkles className="h-3.5 w-3.5 text-[#6cc7ff]" />
-          create_task_board
-        </div>
-        <div className="flex items-center gap-2 text-[10px] text-[#7d8791]">
-          <span className={workspace.status === "error" ? "text-[#fca5a5]" : "text-[#34d399]"}>
-            {workspace.status === "idle" ? "待执行" : workspace.status === "error" ? "失败" : "已同步"}
-          </span>
-          <span className="font-mono">now</span>
-          <ChevronDown className="h-3.5 w-3.5" />
-        </div>
+        <span className="flex items-center gap-2 text-[12px] font-medium text-[#e1e7ec]"><Sparkles className="h-3.5 w-3.5 text-[#6cc7ff]" />任务进度</span>
+        <span className="text-[10px] text-[#7d8791]">{view.workflow}</span>
       </div>
-      <pre className="m-2 overflow-x-auto rounded-[10px] border border-[#17191b] bg-[#050606] p-3 font-mono text-[12px] leading-relaxed text-[#8f99a3]">
-        {JSON.stringify(payload, null, 2)}
-      </pre>
+      <dl className="grid grid-cols-[54px_minmax(0,1fr)] gap-x-3 gap-y-3 p-3 text-[12px] leading-relaxed text-[#8f99a3]">
+        <dt>需求</dt><dd className="break-words text-[#d4dce4]">{workspace.query || "上传原片后，描述剪辑或译制需求"}</dd>
+        <dt>版本</dt><dd>{workspace.editingSession ? `v${workspace.editingSession.state_version}` : "等待建立"}</dd>
+        <dt>下一步</dt><dd className="text-[#bce6f5]">{view.nextStep}</dd>
+      </dl>
     </div>
   );
 }
@@ -1832,9 +1849,9 @@ function ToolCallRow({ name, time, status = "done" }: { name: string; time: stri
 }
 
 function FinalOutputCard({ workspace }: { workspace: WorkspaceController }) {
-  const hasRender = Boolean(workspace.renderResult);
-  const statusLabel = workspace.error ? "执行遇到问题" : hasRender ? "视频已成功导出，可下载！" : "等待检索结果与剪辑计划";
-  const outputPath = workspace.renderResult?.result?.output_url ?? "等待生成真实输出";
+  const view = workflowPresentation(workspace);
+  const hasRender = Boolean(view.rendered);
+  const statusLabel = workspace.error ? "执行遇到问题" : hasRender ? "视频已成功导出，可下载！" : view.nextStep;
 
   return (
     <div className="overflow-hidden rounded-[12px] border border-[#24272a] bg-[#0c0d0e]">
@@ -1861,14 +1878,14 @@ function FinalOutputCard({ workspace }: { workspace: WorkspaceController }) {
           {workspace.error ?? statusLabel}
         </div>
         <div className="space-y-1.5">
-          <OutputLine label="文件名" value={hasRender ? outputPath.split("/").pop() ?? "rendered.mp4" : "等待生成"} />
+          <OutputLine label="文件名" value={hasRender ? "video.mp4" : "等待生成"} />
           <OutputLine label="时长" value={workspace.renderResult?.result?.duration_seconds ? `${workspace.renderResult.result.duration_seconds.toFixed(1)}秒` : "由剪辑计划决定"} />
           <OutputLine label="分辨率" value={workspace.renderResult?.result?.width && workspace.renderResult?.result?.height ? `${workspace.renderResult.result.width}×${workspace.renderResult.result.height}` : canvasRatio(workspace.editingSession)} />
           <OutputLine label="状态" value={workspace.renderResult?.status ?? workspace.status} />
         </div>
         <div className="flex items-center gap-2 rounded-[10px] border border-[#202326] bg-[#050606] p-2">
           <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-[#737b84]">
-            {outputPath}
+            {hasRender ? "成片已就绪，点击下载" : "成片尚未导出"}
           </span>
           <a
             href={workspace.renderResult?.result?.output_url}
@@ -2017,7 +2034,7 @@ function AgentInputBar({ workspace }: { workspace: WorkspaceController }) {
           value={workspace.query}
           onChange={(event) => workspace.setQuery(event.target.value)}
           className="h-11 w-full rounded-full border border-[#25282b] bg-[#080909] pl-11 pr-[130px] text-[12px] text-[#edf1f4] outline-none placeholder:text-[#69717b] focus:border-[#37404a]"
-          placeholder="有问题，尽管问"
+          placeholder="例如：剪出前 20 秒；翻译成英文并配音"
         />
         <input id="video-upload" ref={fileInputRef} className="hidden" type="file" accept="video/*" multiple onChange={onFileChange} />
         <input ref={imageInputRef} className="hidden" type="file" accept="image/*" onChange={onImageChange} />
@@ -2107,26 +2124,7 @@ function InputToolButton({
 }
 
 function PixelCatLogo({ className = "h-7 w-7" }: { className?: string }) {
-  return (
-    <svg
-      className={`${className} shrink-0 text-white`}
-      viewBox="0 0 20 18"
-      aria-label="CamCat pixel cat logo"
-      role="img"
-      shapeRendering="crispEdges"
-    >
-      <title>CamCat pixel cat logo</title>
-      <path
-        data-logo-part="outline"
-        fill="currentColor"
-        fillRule="evenodd"
-        d="M1 1h5v2h8V1h5v11h-2v3h-3v2H6v-2H3v-3H1V1Zm2 2v9h2v2h3v1h4v-1h3v-2h2V3h-3v2H6V3H3Z"
-      />
-      <rect x="6" y="8" width="2" height="2" fill="currentColor" />
-      <rect x="12" y="8" width="2" height="2" fill="currentColor" />
-      <path d="M9 11h2v1h2v1H7v-1h2v-1Z" fill="currentColor" />
-    </svg>
-  );
+  return (<svg className={`${className ?? "h-8 w-8"} shrink-0 text-white`} viewBox="0 0 24 24" aria-label="剪辑工作台标志" role="img" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18M9 3 6 9m10-6-3 6m-3 3 6 3-6 3v-6Z"/></svg>);
 }
 
 function formatTime(value: number) {

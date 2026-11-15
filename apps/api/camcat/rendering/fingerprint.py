@@ -41,7 +41,7 @@ def fingerprint_media(
     *,
     media_id: str,
     storage_key: str,
-    retention_class: Literal["transient_4h", "library"] | None = None,
+    retention_class: Literal["transient_4h", "library", "generated"] | None = None,
 ) -> MaterializedMedia:
     resolved = path.resolve(strict=True)
     before = resolved.stat()

@@ -1,0 +1,18 @@
+{
+  "version": "camcat-public-holdout-v1",
+  "purpose": "First evaluation on two tasks not used to repair the fixed pilot; freeze the deployed application and report every result",
+  "selection": "For each supported family, choose the smallest positive task number absent from public_pilot_v1; selected before reading instructions or scoring files",
+  "excluded_protocol": "public_pilot_v1.json",
+  "application_image": "sha256:e3e15a4df02fe09d3d91f374d26c0a74613551e380f85e29d9be63fad1646bad",
+  "agentic": {
+    "repository": "PhiloLabs/agentic-vbench",
+    "revision": "b2764ed4b2a4b5a1737026b63887b50bba62f793",
+    "tasks": [
+      {"family": "assembly", "id": "agentic-vbench-assembly-task2", "dataset": "ameddserM/agentic_vbench_video_assembly", "archive": "materials/2.zip", "clip_count": 12},
+      {"family": "sequencing", "id": "agentic-vbench-sequencing-task2", "dataset": "ameddserM/agentic_vbench_video_sequencing", "archive": "materials/2.zip", "clip_count": 7}
+    ],
+    "agent_timeout_seconds": 1800,
+    "verifier_timeout_seconds": 1800,
+    "task_attempts": 1
+  }
+}

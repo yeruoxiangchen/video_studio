@@ -12,6 +12,92 @@ async function loadApiModule() {
   return import(`data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`);
 }
 
+test("project inventory follows cursors and keeps projects beyond the first page", async () => {
+  const { createCamCatApiClient } = await loadApiModule();
+  const calls = [];
+  const client = createCamCatApiClient({baseUrl: "", userId: "owner", fetchImpl: async (url) => {
+    calls.push(url);
+    return response(calls.length === 1
+      ? {items: [{project_id: "first", sessions: []}], next_cursor: "page-two"}
+      : {items: [{project_id: "new-project", sessions: []}], next_cursor: null});
+  }});
+  const items = await client.listAllProjects();
+  assert.deepEqual(items.map(item => item.project_id), ["first", "new-project"]);
+  assert.equal(calls.length, 2);
+  assert.equal(new URL(calls[1], "http://local").searchParams.get("cursor"), "page-two");
+  assert.ok(calls.every(url => url.includes("include_sessions=true")));
+});
+
+test("project inventory stops when a broken API repeats its cursor", async () => {
+  const { createCamCatApiClient } = await loadApiModule();
+  let calls = 0;
+  const client = createCamCatApiClient({baseUrl: "", userId: "owner", fetchImpl: async () => {
+    calls++;
+    return response({items: [], next_cursor: "repeated"});
+  }});
+  await assert.rejects(() => client.listAllProjects(), /分页游标重复/);
+  assert.equal(calls, 2);
+});
+
+test("localization translation is bound to a saved CamCat version", async () => {
+  const { createCamCatApiClient } = await loadApiModule();
+  const requests = [];
+  const client = createCamCatApiClient({baseUrl: "", userId: "owner", fetchImpl: async (url, init) => {
+    requests.push({url, init}); return response({job_id: "translation", status: "queued"});
+  }});
+  await client.translateSubtitles("session", {base_version: 7, target_language: "en", source_track_id: "captions", glossary: {"术语": "Term"}});
+  assert.equal(requests[0].url, "/api/v1/editing/sessions/session/localization/translate");
+  assert.equal(requests[0].init.headers["X-User-Id"], "owner");
+  assert.equal(JSON.parse(requests[0].init.body).base_version, 7);
+  assert.equal(JSON.parse(requests[0].init.body).glossary["术语"], "Term");
+});
+
+test("localization speech generation does not implicitly apply its result", async () => {
+  const { createCamCatApiClient } = await loadApiModule();
+  const calls = [];
+  const client = createCamCatApiClient({baseUrl: "", userId: "owner", fetchImpl: async (url, init) => {
+    calls.push({url, init}); return response({job_id: "speech", status: "queued"});
+  }});
+  await client.dubSubtitles("session", {base_version: 8, original_audio_volume: 0, allow_duration_rewrite: false});
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "/api/v1/editing/sessions/session/localization/dub");
+  assert.equal(JSON.parse(calls[0].init.body).allow_duration_rewrite, false);
+});
+
+test("localization result application sends the explicit base version", async () => {
+  const { createCamCatApiClient } = await loadApiModule();
+  let captured;
+  const client = createCamCatApiClient({baseUrl: "", userId: "owner", fetchImpl: async (url, init) => {
+    captured = {url, init}; return response({editing_session_id: "session", state_version: 9});
+  }});
+  await client.applyLocalizationResult("session", "speech", 8);
+  assert.equal(captured.url, "/api/v1/editing/sessions/session/localization/speech/apply");
+  assert.deepEqual(JSON.parse(captured.init.body), {base_version: 8});
+});
+
+test("delivery signoff is explicit and bound to the saved version", async () => {
+  const {createCamCatApiClient} = await loadApiModule();
+  let captured;
+  const client = createCamCatApiClient({baseUrl: "", userId: "editor", fetchImpl: async (url, init) => {
+    captured = {url, init}; return response({state_version: 10});
+  }});
+  await client.confirmLocalizationReview("session", 9);
+  assert.equal(captured.url, "/api/v1/editing/sessions/session/localization/review");
+  assert.deepEqual(JSON.parse(captured.init.body), {base_version: 9, confirmed: true});
+});
+
+test("delivery ZIP download carries owner identity and requested version", async () => {
+  const {createCamCatApiClient} = await loadApiModule();
+  let captured;
+  const client = createCamCatApiClient({baseUrl: "", userId: "editor", fetchImpl: async (url, init) => {
+    captured = {url, init}; return new Response("unit ZIP bytes", {headers: {"content-type": "application/zip"}});
+  }});
+  const file = await client.downloadLocalizationDelivery("session", "render", 10);
+  assert.equal(captured.url, "/api/v1/editing/sessions/session/localization/delivery/render?base_version=10");
+  assert.equal(captured.init.headers["X-User-Id"], "editor");
+  assert.equal(await file.text(), "unit ZIP bytes");
+});
+
 test("API conflict keeps structured version details for recovery", async () => {
   const { createCamCatApiClient } = await loadApiModule();
   const client = createCamCatApiClient({baseUrl: "", userId: "u", fetchImpl: async () =>

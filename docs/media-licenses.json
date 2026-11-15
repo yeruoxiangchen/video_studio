@@ -3,6 +3,12 @@
   "note": "Licensed library imports retain source_url and license_name. User originals are transient and are not library records. Downloaded media is intentionally not committed.",
   "sources": [
     {
+      "provider": "MDN Interactive Examples",
+      "api": "https://github.com/mdn/interactive-examples/tree/13024db581b08fae11a0ca229497198b9b0534e7/live-examples/media/cc0-videos",
+      "license": "https://github.com/mdn/interactive-examples/blob/13024db581b08fae11a0ca229497198b9b0534e7/LICENSE",
+      "usage": "Pinned CC0 short video for real licensed-library import and a separately recorded transient upload derivative. Exact source is recorded in open-video-library.json."
+    },
+    {
       "provider": "Pixabay",
       "api": "https://pixabay.com/api/docs/",
       "license": "https://pixabay.com/service/license-summary/",

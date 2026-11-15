@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, or_, select, update
+from sqlalchemy import or_, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
@@ -44,6 +45,8 @@ def redact_transient_document(document: dict[str, Any]) -> dict[str, Any]:
     ]
     removed_segments: set[str] = set()
     for track in payload["timeline"]["tracks"]:
+        if transient_ids and track["type"] == "text":
+            track["segments"] = []
         retained = []
         for segment in track["segments"]:
             if segment.get("source_id") in transient_ids:
@@ -72,6 +75,8 @@ def redact_transient_document(document: dict[str, Any]) -> dict[str, Any]:
     payload["metadata"]["source_media"] = []
     payload["metadata"]["source_segments"] = []
     payload["metadata"]["transient_source_status"] = "expired"
+    if "localization" in payload["metadata"]:
+        payload["metadata"]["localization"] = {"expired": True}
     return EditingProjectV2.model_validate(payload).model_dump(mode="json", by_alias=True)
 
 
@@ -86,7 +91,14 @@ def _redact_patch_operation(operation: dict[str, Any]) -> dict[str, Any]:
     path = str(operation.get("path", ""))
     sensitive_path = any(
         marker in path
-        for marker in ("/source_media", "/source_segments", "/storage_key", "/transcript")
+        for marker in (
+            "/source_media",
+            "/source_segments",
+            "/storage_key",
+            "/transcript",
+            "/localization",
+            "/timeline",
+        )
     )
     if sensitive_path or "temporary/" in repr(operation.get("value")):
         return {"op": operation.get("op"), "path": path, "redacted": True}
@@ -176,9 +188,7 @@ class StateRepository:
         owner_id: str | None = None,
         include_deleted: bool = False,
     ) -> tuple[EditingSession, VersionedState]:
-        query: Select[tuple[EditingSession]] = select(EditingSession).where(
-            EditingSession.id == session_id
-        )
+        query = select(EditingSession).where(EditingSession.id == session_id)
         if owner_id is not None:
             query = query.where(EditingSession.owner_id == owner_id)
         if not include_deleted:
@@ -366,17 +376,44 @@ class JobRepository:
         idempotency_key: str | None = None,
         expires_at: datetime | None = None,
         max_attempts: int = 3,
+        commit: bool = True,
     ) -> Job:
         if idempotency_key:
-            existing = self.db.scalar(
-                select(Job).where(
-                    Job.owner_id == owner_id,
-                    Job.kind == kind,
-                    Job.idempotency_key == idempotency_key,
+            # The unique constraint arbitrates simultaneous submissions. A preceding
+            # SELECT cannot protect the INSERT from another request committing first.
+            statement = (
+                insert(Job)
+                .values(
+                    owner_id=owner_id,
+                    kind=kind,
+                    status=JobStatus.QUEUED,
+                    payload=payload,
+                    idempotency_key=idempotency_key,
+                    expires_at=expires_at,
+                    max_attempts=max_attempts,
+                    available_at=utcnow(),
                 )
+                .on_conflict_do_nothing(
+                    index_elements=[Job.owner_id, Job.kind, Job.idempotency_key]
+                )
+                .returning(Job)
             )
-            if existing is not None:
-                return existing
+            persisted = self.db.scalar(statement)
+            if persisted is None:
+                persisted = self.db.scalar(
+                    select(Job).where(
+                        Job.owner_id == owner_id,
+                        Job.kind == kind,
+                        Job.idempotency_key == idempotency_key,
+                    )
+                )
+            if persisted is None:
+                raise RuntimeError("idempotent job disappeared during submission")
+            if commit:
+                self.db.commit()
+            else:
+                self.db.flush()
+            return persisted
         job = Job(
             owner_id=owner_id,
             kind=kind,
@@ -388,22 +425,32 @@ class JobRepository:
             available_at=utcnow(),
         )
         self.db.add(job)
-        self.db.commit()
+        if commit:
+            self.db.commit()
+        else:
+            self.db.flush()
         return job
 
-    def claim_next(self, *, worker_id: str, lease_seconds: int = 600) -> Job | None:
+    def claim_next(
+        self,
+        *,
+        worker_id: str,
+        lease_seconds: int = 600,
+        kinds: frozenset[JobKind] | None = None,
+    ) -> Job | None:
         now = utcnow()
+        query = select(Job).where(
+            Job.cancel_requested_at.is_(None),
+            Job.attempts < Job.max_attempts,
+            or_(
+                (Job.status == JobStatus.QUEUED) & (Job.available_at <= now),
+                (Job.status == JobStatus.RUNNING) & (Job.lease_expires_at < now),
+            ),
+        )
+        if kinds is not None:
+            query = query.where(Job.kind.in_(kinds))
         job = self.db.scalar(
-            select(Job)
-            .where(
-                Job.cancel_requested_at.is_(None),
-                Job.attempts < Job.max_attempts,
-                or_(
-                    (Job.status == JobStatus.QUEUED) & (Job.available_at <= now),
-                    (Job.status == JobStatus.RUNNING) & (Job.lease_expires_at < now),
-                ),
-            )
-            .order_by(Job.available_at, Job.created_at, Job.id)
+            query.order_by(Job.available_at, Job.created_at, Job.id)
             .with_for_update(skip_locked=True)
             .limit(1)
         )
@@ -454,7 +501,14 @@ class JobRepository:
             ).all()
         )
 
-    def update_progress(self, job: Job, progress: float, *, lease_seconds: int = 600) -> None:
+    def update_progress(
+        self,
+        job: Job,
+        progress: float,
+        *,
+        lease_seconds: int = 600,
+        checkpoint: dict[str, Any] | None = None,
+    ) -> None:
         self.db.refresh(job)
         if job.cancel_requested_at is not None:
             job.status = JobStatus.CANCELLED
@@ -465,6 +519,8 @@ class JobRepository:
         job.progress = min(1.0, max(0.0, progress))
         job.heartbeat_at = now
         job.lease_expires_at = now + timedelta(seconds=lease_seconds)
+        if checkpoint is not None:
+            job.checkpoint = checkpoint
         self.db.commit()
 
     def checkpoint(self, job: Job, stage: str, data: dict[str, Any] | None = None) -> None:
@@ -472,8 +528,9 @@ class JobRepository:
         checkpoint.update({"stage": stage, "updated_at": utcnow().isoformat()})
         if data:
             checkpoint["data"] = data
-        job.checkpoint = checkpoint
-        self.update_progress(job, job.progress)
+        # refresh() in the heartbeat discards pending ORM changes; assign the
+        # checkpoint after that refresh, in the same committed transaction.
+        self.update_progress(job, job.progress, checkpoint=checkpoint)
 
     def succeed(self, job: Job, result: dict[str, Any]) -> None:
         job.status = JobStatus.SUCCEEDED
@@ -561,6 +618,9 @@ class JobRepository:
         for job in jobs:
             job.payload = {"redacted": True, "expired_at": cutoff.isoformat()}
             job.result = {"redacted": True, "expired_at": cutoff.isoformat()}
+            checkpoint = dict(job.checkpoint or {})
+            checkpoint.pop("source_visual_cache", None)
+            job.checkpoint = checkpoint
             job.redacted_at = cutoff
         self.db.commit()
         return len(sessions), len(jobs)

@@ -6,6 +6,9 @@ import type {
   JobResponse as JobDto,
   SourceMediaReference as SourceMediaDto,
   SourceUploadResponse as SourceUploadDto,
+  LocalizationContext as LocalizationContextDto,
+  TranslateRequest,
+  DubRequest,
 } from "./generated/api";
 
 export type FetchLike = typeof fetch;
@@ -17,6 +20,8 @@ export type ProjectResponse = {
   created_at: string;
   updated_at: string;
 };
+
+export type ProjectWithSessions = ProjectResponse & { sessions: EditingSessionResponse[] };
 
 export type PageResponse<T> = {
   items: T[];
@@ -136,6 +141,7 @@ export type JobResponse = Omit<JobDto, "status" | "result"> & {
 };
 
 export type RenderJobResponse = JobResponse;
+export type LocalizationContext = Omit<LocalizationContextDto, "jobs"> & { jobs: JobResponse[] };
 
 export type AuditEvent = {
   audit_event_id: string;
@@ -228,11 +234,31 @@ export function createCamCatApiClient({ baseUrl, userId, fetchImpl = fetch }: Cl
     });
   }
 
+  function listProjects(cursor?: string) {
+    const params = new URLSearchParams({ include_sessions: "true" });
+    if (cursor) params.set("cursor", cursor);
+    return requestJson<PageResponse<ProjectWithSessions>>(`/api/v1/projects?${params}`, {method: "GET"});
+  }
+
+  async function listAllProjects(): Promise<ProjectWithSessions[]> {
+    const projects = new Map<string, ProjectWithSessions>();
+    const cursors = new Set<string>();
+    let cursor: string | undefined;
+    do {
+      const page = await listProjects(cursor);
+      for (const project of page.items) projects.set(project.project_id, project);
+      cursor = page.next_cursor ?? undefined;
+      if (cursor) {
+        if (cursors.has(cursor)) throw new Error("项目分页游标重复，请刷新重试。");
+        cursors.add(cursor);
+      }
+    } while (cursor);
+    return [...projects.values()];
+  }
+
   return {
-    listProjects(cursor?: string) {
-      const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
-      return requestJson<PageResponse<ProjectResponse>>(`/api/v1/projects${suffix}`, { method: "GET" });
-    },
+    listProjects,
+    listAllProjects,
 
     createProject(name: string) {
       return json<ProjectResponse>("/api/v1/projects", "POST", { name });
@@ -277,6 +303,45 @@ export function createCamCatApiClient({ baseUrl, userId, fetchImpl = fetch }: Cl
 
     getJob(jobId: string) {
       return requestJson<JobResponse>(`/api/v1/jobs/${encodeURIComponent(jobId)}`, { method: "GET" });
+    },
+
+    getLocalizationContext(sessionId: string, sourceTrackId?: string) {
+      return requestJson<LocalizationContext>(
+        `/api/v1/editing/sessions/${encodeURIComponent(sessionId)}/localization${sourceTrackId ? `?source_track_id=${encodeURIComponent(sourceTrackId)}` : ""}`, {method: "GET"},
+      );
+    },
+
+    translateSubtitles(sessionId: string, payload: TranslateRequest) {
+      return json<JobResponse>(
+        `/api/v1/editing/sessions/${encodeURIComponent(sessionId)}/localization/translate`, "POST", payload,
+      );
+    },
+
+    dubSubtitles(sessionId: string, payload: DubRequest) {
+      return json<JobResponse>(
+        `/api/v1/editing/sessions/${encodeURIComponent(sessionId)}/localization/dub`, "POST", payload,
+      );
+    },
+
+    applyLocalizationResult(sessionId: string, jobId: string, baseVersion: number) {
+      return json<EditingSessionResponse>(
+        `/api/v1/editing/sessions/${encodeURIComponent(sessionId)}/localization/${encodeURIComponent(jobId)}/apply`,
+        "POST", {base_version: baseVersion},
+      );
+    },
+
+    confirmLocalizationReview(sessionId: string, baseVersion: number) {
+      return json<EditingSessionResponse>(
+        `/api/v1/editing/sessions/${encodeURIComponent(sessionId)}/localization/review`,
+        "POST", {base_version: baseVersion, confirmed: true},
+      );
+    },
+
+    async downloadLocalizationDelivery(sessionId: string, jobId: string, baseVersion: number) {
+      const path = `/api/v1/editing/sessions/${encodeURIComponent(sessionId)}/localization/delivery/${encodeURIComponent(jobId)}?base_version=${baseVersion}`;
+      const response = await fetchImpl(`${normalizedBaseUrl}${path}`, {method: "GET", headers: {"X-User-Id": userId}});
+      if (!response.ok) throw new CamCatApiError(response.status, await readJson(response));
+      return response.blob();
     },
 
     listJobs(cursor?: string) {
@@ -373,6 +438,21 @@ export function createCamCatApiClient({ baseUrl, userId, fetchImpl = fetch }: Cl
         `/api/v1/editing/sessions/${encodeURIComponent(editingSessionId)}/agent`,
         "POST",
         { base_version: baseVersion, instruction, query_image_base64: queryImageBase64 },
+      );
+    },
+
+    dispatchAgentAction(editingSessionId: string, baseVersion: number, instruction: string) {
+      return json<{action: "edit" | "clarify" | "translate" | "dub" | "translate_and_dub";
+        message: string; session: EditingSessionResponse; job?: JobResponse}>(
+        `/api/v1/editing/sessions/${encodeURIComponent(editingSessionId)}/agent/dispatch`,
+        "POST", {base_version: baseVersion, instruction},
+      );
+    },
+
+    prepareLocalizationSource(editingSessionId: string, baseVersion: number) {
+      return json<EditingSessionResponse>(
+        `/api/v1/editing/sessions/${encodeURIComponent(editingSessionId)}/localization/prepare`,
+        "POST", {base_version: baseVersion},
       );
     },
 

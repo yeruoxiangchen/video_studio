@@ -9,6 +9,58 @@ from fastapi.testclient import TestClient
 pytestmark = pytest.mark.integration
 
 
+def project_with_sessions(client: TestClient, project_id: str) -> dict:
+    params = {"include_sessions": True, "limit": 100}
+    seen = set()
+    while True:
+        expanded = client.get("/api/v1/projects", params=params)
+        assert expanded.status_code == 200
+        page = expanded.json()
+        item = next((row for row in page["items"] if row["project_id"] == project_id), None)
+        if item is not None:
+            return item
+        cursor = page["next_cursor"]
+        assert cursor and cursor not in seen, "Created project was missing from cursor traversal"
+        seen.add(cursor)
+        params["cursor"] = cursor
+
+
+def test_native_render_policy_is_persisted_with_version_conflict_protection() -> None:
+    with TestClient(app, raise_server_exceptions=False) as client:
+        project = client.post("/api/v1/projects", json={"name": f"render-policy-{uuid4()}"})
+        assert project.status_code == 201
+        packet = client.post(
+            "/api/v1/editing/sessions",
+            json={
+                "project_id": project.json()["project_id"],
+                "current_goal": "preserve original color and audio",
+            },
+        )
+        assert packet.status_code == 201
+        session = packet.json()["editing_session_id"]
+        body = {
+            "base_version": 1,
+            "reason": "render policy contract",
+            "commands": [
+                {
+                    "type": "set_render_policy",
+                    "policy": {"preserve_color": True, "preserve_audio": True},
+                }
+            ],
+        }
+        changed = client.post(f"/api/v1/editing/sessions/{session}/commands", json=body)
+        assert changed.status_code == 200, changed.text
+        saved = client.get(f"/api/v1/editing/sessions/{session}").json()
+        assert saved["state_version"] == 2
+        assert saved["state"]["metadata"]["render_policy"] == {
+            "preserve_color": True,
+            "preserve_audio": True,
+        }
+        conflict = client.post(f"/api/v1/editing/sessions/{session}/commands", json=body)
+        assert conflict.status_code == 409
+        client.delete(f"/api/v1/editing/sessions/{session}")
+
+
 def test_project_session_command_conflict_audit_and_soft_delete_journey() -> None:
     with TestClient(app, raise_server_exceptions=False) as client:
         project = client.post("/api/v1/projects", json={"name": f"integration-{uuid4()}"})
@@ -36,6 +88,12 @@ def test_project_session_command_conflict_audit_and_soft_delete_journey() -> Non
         )
         assert updated.status_code == 200
         assert updated.json()["state_version"] == 2
+
+        item = project_with_sessions(client, project_id)
+        assert [
+            (session["editing_session_id"], session["state_version"])
+            for session in item["sessions"]
+        ] == [(session_id, 2)]
 
         conflict = client.post(
             f"/api/v1/editing/sessions/{session_id}/commands",
@@ -66,3 +124,5 @@ def test_project_session_command_conflict_audit_and_soft_delete_journey() -> Non
         missing = client.get(f"/api/v1/editing/sessions/{session_id}")
         assert missing.status_code == 404
         assert missing.json()["error"]["code"] == "not_found"
+        item = project_with_sessions(client, project_id)
+        assert item["sessions"] == []

@@ -1,0 +1,56 @@
+{
+  "time": "2026-11-15T09:44:49.326323+00:00",
+  "scope": "Generic workstation branding; panel and model-selected chat localization; durable translation/dubbing continuation; source preparation and CAS conflict handling; real delivery/playback/download",
+  "checks": {
+    "backend_unit": 543,
+    "frontend_unit": 37,
+    "mypy_files": 116,
+    "ruff": "passed",
+    "frontend_build": "passed",
+    "openapi_contract": "passed",
+    "real_api": 2,
+    "real_browser_journeys": 3,
+    "delivery_temporary_directories_remaining": 0
+  },
+  "images": {
+    "api": "sha256:a884a8b10eed25b7074e44707d358a11b55990bad3d4e1e853e08faf8650a93c",
+    "worker": "sha256:a884a8b10eed25b7074e44707d358a11b55990bad3d4e1e853e08faf8650a93c",
+    "localization-worker": "sha256:a884a8b10eed25b7074e44707d358a11b55990bad3d4e1e853e08faf8650a93c",
+    "render-worker": "sha256:a884a8b10eed25b7074e44707d358a11b55990bad3d4e1e853e08faf8650a93c",
+    "web": "sha256:85710245661b42e9e7e5bb80ba1aadcf8aa44c20c3413ce12579eacd4008899a"
+  },
+  "browser_journeys": [
+    {
+      "file": "agent-localization.spec.ts",
+      "status": "passed",
+      "duration_ms": 151113
+    },
+    {
+      "file": "business-delivery.spec.ts",
+      "status": "passed",
+      "duration_ms": 31325
+    },
+    {
+      "file": "camcat.spec.ts",
+      "status": "passed",
+      "duration_ms": 269409.177
+    }
+  ],
+  "upstream_commit": "1e8d0492a9793f47d9a69362378fb2535f386b52",
+  "quality_evaluation": "Historical v7 baseline retained; no new quality-score measurement",
+  "quality_component_sources": {
+    "apps/api/camcat/localization/service.py": {
+      "sha256": "caa1d385fd1d68d80634b7d9290922b53ed3b09a3baa1009461ff7c1903de962",
+      "matches_v7": true
+    },
+    "apps/api/camcat/localization/prompts.py": {
+      "sha256": "3a8336ca8655d8461a8795896d148919856da34950fe93177c6ca59af880f5f4",
+      "matches_v7": true
+    },
+    "apps/api/camcat/localization/contract.py": {
+      "sha256": "c13af5c5a6f1b8538417d6e70318feae805f3fc96ce6bc1ab74577eb22cf869b",
+      "matches_v7": true
+    }
+  },
+  "demo_manifest_sha256": "2656416c91cd3033109593c2d92e659a77622dbfdc0daaee6db532f0d7aef0a9"
+}

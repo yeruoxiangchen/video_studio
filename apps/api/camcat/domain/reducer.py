@@ -20,8 +20,11 @@ from camcat.domain.commands import (
     RemoveTransition,
     RenameTrack,
     ReplaceSegmentMedia,
+    SetLocalizationMetadata,
+    SetRenderPolicy,
     SetSegmentTransform,
     SetTransition,
+    SetVideoAudioVolume,
     SplitSegment,
     TrimSegment,
     UpdateAudioSegment,
@@ -67,7 +70,7 @@ def reduce_commands(
         _apply(working, command)
         working = _dump(EditingProjectV2.model_validate(working))
     project = EditingProjectV2.model_validate(working)
-    operations = cast(list[dict[str, Any]], jsonpatch.JsonPatch.from_diff(before, working).patch)
+    operations = jsonpatch.JsonPatch.from_diff(before, working).patch
     if not operations:
         raise CommandConflict("commands did not change the project")
     return ReductionResult(project=project, operations=operations)
@@ -81,6 +84,12 @@ def _apply(document: dict[str, Any], command: DomainEditCommand) -> None:
         return
     if isinstance(command, UpdateGoal):
         document["goal"] = command.goal.strip()
+        return
+    if isinstance(command, SetLocalizationMetadata):
+        document["metadata"]["localization"] = command.metadata.model_dump(mode="json")
+        return
+    if isinstance(command, SetRenderPolicy):
+        document["metadata"]["render_policy"] = command.policy.model_dump(mode="json")
         return
     if isinstance(command, RegisterSource):
         sources = cast(list[dict[str, Any]], document["sources"])
@@ -196,7 +205,11 @@ def _apply(document: dict[str, Any], command: DomainEditCommand) -> None:
     if isinstance(command, InitializeEditingProject):
         raise CommandConflict("InitializeEditingProject is only valid once")
     track, segment = _segment(tracks, command.segment_id)
-    if isinstance(command, TrimSegment):
+    if isinstance(command, SetVideoAudioVolume):
+        if segment["type"] != "video":
+            raise CommandConflict("source audio volume requires a video segment")
+        segment["audio_volume"] = command.audio_volume
+    elif isinstance(command, TrimSegment):
         if segment["type"] not in {"video", "audio"}:
             raise CommandConflict("only media segments can be trimmed")
         segment["source_start_us"] = command.source_start_us

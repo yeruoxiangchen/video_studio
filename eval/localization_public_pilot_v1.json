@@ -1,0 +1,152 @@
+{
+  "version": "camcat-localization-public-pilot-v1",
+  "status": "frozen_ready_to_run",
+  "language_pair": "zh-en",
+  "dataset": {
+    "repository": "google/fleurs",
+    "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+    "license": "cc-by-4.0",
+    "source_config": "cmn_hans_cn",
+    "reference_config": "en_us",
+    "split": "test",
+    "alignment": "same sentence id in both test sets; require one unique English reference",
+    "verified_eligible_unique_ids": 349
+  },
+  "selection": {
+    "seed": 20261114,
+    "count": 20,
+    "sentence_ids": [
+      "1968",
+      "1965",
+      "1898",
+      "1700",
+      "1947",
+      "1808",
+      "1785",
+      "1952",
+      "1861",
+      "1883",
+      "1953",
+      "1891",
+      "1662",
+      "1801",
+      "1809",
+      "1717",
+      "1752",
+      "1857",
+      "1775",
+      "1667"
+    ],
+    "sentence_rule": "deduplicate by sentence id; ascending sha256(20261114:localization_public_v1:id)",
+    "recording_rule": "one Chinese recording per id; ascending sha256(20261114:recording:filename)"
+  },
+  "inputs": "/data/zjr/camcat_studio/benchmarks/localization_public_v1/inputs.jsonl",
+  "references": "/data/zjr/camcat_studio/benchmarks/localization_public_v1/references.jsonl",
+  "pipelines": [
+    {
+      "name": "asr",
+      "input": "original Chinese recording",
+      "reference": "source_asr_reference",
+      "metrics": [
+        "CER"
+      ],
+      "count": 20
+    },
+    {
+      "name": "translation_gold",
+      "input": "source_text",
+      "reference": "target_text",
+      "generous_window_seconds": 60,
+      "metrics": [
+        "chrF++",
+        "corpus_BLEU"
+      ],
+      "count": 20
+    },
+    {
+      "name": "translation_asr",
+      "input": "actual production ASR output",
+      "reference": "target_text",
+      "generous_window_seconds": 60,
+      "metrics": [
+        "chrF++",
+        "corpus_BLEU"
+      ],
+      "count": 20
+    },
+    {
+      "name": "dubbing",
+      "input": "actual translation_gold English output; full ASR-to-dubbing is covered by five video workflows",
+      "window": "measured source recording duration",
+      "voice": "configured English Piper voice",
+      "max_speed": 1.2,
+      "allow_duration_rewrite": true,
+      "max_duration_rewrites": 1,
+      "metrics": [
+        "roundtrip_WER_vs_actual_TTS_text",
+        "duration_overflow_rate",
+        "duration_rewrite_rate",
+        "post_rewrite_chrF++",
+        "post_rewrite_corpus_BLEU",
+        "request_elapsed_seconds"
+      ],
+      "count": 20
+    },
+    {
+      "name": "video_delivery",
+      "input": "first five selected recordings wrapped with recorded licensed background footage",
+      "via": "real source upload, localization jobs, CAS application and FFmpeg render",
+      "metrics": [
+        "completion_rate",
+        "valid_media_streams",
+        "subtitle_and_audio_within_video",
+        "source_and_target_cue_timing_preserved"
+      ],
+      "count": 5,
+      "scope": "derived business workflow test; FLEURS supplies audio/text, not original video annotations"
+    }
+  ],
+  "metric_implementations": {
+    "translation": "mjpost/sacrebleu; chrF word_order=2, English BLEU tokenizer=13a; record package version and metric signatures",
+    "speech_errors": "jitsi/jiwer; freeze normalization and retain raw hypotheses"
+  },
+  "manual_review": {
+    "count": 10,
+    "checks": [
+      "translation faithfulness",
+      "omissions",
+      "names and numeric facts",
+      "speech intelligibility",
+      "speech naturalness"
+    ]
+  },
+  "rules": [
+    "reference English is scoring-only and never enters translation prompts",
+    "freeze sample ids before model outputs",
+    "report all twenty requests including failures and missing outputs",
+    "record initial and final text when a duration rewrite occurs",
+    "separate automatic quality metrics from delivery success rates",
+    "run after the current editing evaluation to avoid queue contention"
+  ],
+  "audio_preparation": {
+    "state": "prepared",
+    "original_test_archive_bytes": 525346466,
+    "source_url": "https://huggingface.co/datasets/google/fleurs/resolve/70bb2e84b976b7e960aa89f1c648e09c59f894dd/data/cmn_hans_cn/audio/test.tar.gz",
+    "manifest": "/data/zjr/camcat_studio/benchmarks/localization_public_v1/prepared-inputs.json"
+  },
+  "created_at": "2026-11-14T19:44:46.332236+00:00",
+  "application_image": "sha256:e3e15a4df02fe09d3d91f374d26c0a74613551e380f85e29d9be63fad1646bad",
+  "full_suite": {
+    "real_contracts": "temporary database migrations, text/image/video embeddings and reranker, native planner schema/truncation, ASR recovery/silence, translation, TTS, persistent jobs/cache/CAS, concurrency and invalid inputs",
+    "core_deadline_profile": "actual core translation model; native planner has its own real endpoint contracts",
+    "business_regression_cases": 6,
+    "browser_journeys": 1,
+    "stability": {
+      "clients": 4,
+      "duration_seconds": 600,
+      "starts_from": "fresh analyzed licensed source; excludes ASR/planning latency"
+    },
+    "existing_public_editing": "include original frozen-image reports without rerunning; preserve known assembly-task2 failure",
+    "manual_review_pending": true
+  }
+}

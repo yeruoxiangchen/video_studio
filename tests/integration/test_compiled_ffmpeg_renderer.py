@@ -13,6 +13,7 @@ from camcat.domain.project import (
     EditingProjectV2,
     MediaSourceRef,
     TextSegment,
+    TextStyle,
     TextTrack,
     TimelineV2,
     Transform,
@@ -35,6 +36,124 @@ pytestmark = [
         reason="real FFmpeg and FFprobe are required",
     ),
 ]
+
+
+def test_long_bilingual_captions_are_visibly_separated_in_real_render(tmp_path: Path) -> None:
+    from PIL import Image
+
+    source = tmp_path / "black.mp4"
+    _video(source, "black", 440)
+    media = fingerprint_media(source, media_id="footage", storage_key="test/black.mp4")
+    project = EditingProjectV2(
+        project_id="bilingual-layout",
+        title="Bilingual layout",
+        goal="Readable subtitles",
+        canvas=Canvas(width=640, height=360, fps_num=30, fps_den=1),
+        sources=[
+            MediaSourceRef(
+                source_id="footage",
+                origin="licensed_library",
+                storage_key="test/black.mp4",
+                retention_class="library",
+            )
+        ],
+        timeline=TimelineV2(
+            tracks=[
+                VideoTrack(
+                    track_id="main",
+                    name="Main",
+                    segments=[
+                        VideoSegment(
+                            segment_id="clip",
+                            source_id="footage",
+                            timeline_start_us=0,
+                            timeline_duration_us=2_000_000,
+                            source_start_us=0,
+                            source_duration_us=2_000_000,
+                        )
+                    ],
+                ),
+                TextTrack(
+                    track_id="captions",
+                    name="Chinese",
+                    segments=[
+                        TextSegment(
+                            segment_id="source",
+                            start_us=0,
+                            duration_us=2_000_000,
+                            text="游客乘船穿过湖面，欣赏两岸的城市风景。" * 3,
+                            style=TextStyle(y=0.78, color="#00FF00"),
+                        )
+                    ],
+                ),
+                TextTrack(
+                    track_id="localization-subtitles",
+                    name="English",
+                    segments=[
+                        TextSegment(
+                            segment_id="translated",
+                            start_us=0,
+                            duration_us=2_000_000,
+                            text=(
+                                "The visitors sail across the lake "
+                                "and enjoy the city on both banks. "
+                            )
+                            * 5,
+                            style=TextStyle(y=0.90, color="#FFFFFF"),
+                        )
+                    ],
+                ),
+            ]
+        ),
+        metadata={
+            "localization": {
+                "source_track_id": "captions",
+                "target_track_id": "localization-subtitles",
+            }
+        },
+    )
+    profile = RenderProfile()
+    timeline = TimelineCompilerV2(profile).compile(
+        session_id=UUID(int=11), state_version=1, project=project, sources={"footage": media}
+    )
+    build = RenderBuildService().create(
+        tmp_path / "build",
+        timeline=timeline,
+        profile=profile,
+        capability=inspect_capabilities(tmp_path / "runtime"),
+    )
+    output = tmp_path / "bilingual.mp4"
+    FFmpegRenderer().render(build, {"footage": media}, output)
+    assert verify_output(build, output).full_decode_succeeds
+    for index, at in enumerate((0.1, 0.7, 1.4)):
+        frame = tmp_path / f"caption-{index}.png"
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-ss",
+                str(at),
+                "-i",
+                str(output),
+                "-frames:v",
+                "1",
+                str(frame),
+            ],
+            check=True,
+            timeout=30,
+        )
+        image = Image.open(frame).convert("RGB")
+        green, white = [], []
+        for y in range(image.height):
+            for x in range(image.width):
+                red, g, blue = image.getpixel((x, y))
+                if g > 120 and red < 70 and blue < 70:
+                    green.append(y)
+                if min(red, g, blue) > 170:
+                    white.append(y)
+        assert green and white, "Both actual subtitle languages must be visible"
+        assert max(green) + 4 < min(white), "Bilingual glyph regions overlap"
 
 
 def _video(path: Path, color: str, tone: int) -> None:
@@ -226,3 +345,79 @@ def test_v2_background_overlay_text_dialogue_bgm_and_dissolve_render_exact_frame
     assert result.actual_frames == result.expected_frames == 60
     assert (result.width, result.height) == (320, 180)
     assert result.audio_stream_actual and result.full_decode_succeeds and result.output_sha256
+
+
+def test_video_tail_shorter_than_container_renders_the_compiled_frame_count(tmp_path: Path) -> None:
+    source = tmp_path / "audio-tail.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=red:size=320x180:rate=30:duration=2",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:sample_rate=48000:duration=2.06",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            str(source),
+        ],
+        check=True,
+    )
+    sources = {"source": fingerprint_media(source, media_id="source", storage_key="test/tail.mp4")}
+    project = EditingProjectV2(
+        project_id="tail",
+        goal="full-length source cut",
+        title="Tail",
+        canvas=Canvas(width=320, height=180, fps_num=30, fps_den=1),
+        sources=[
+            MediaSourceRef(
+                source_id="source",
+                origin="user_upload",
+                storage_key="test/tail.mp4",
+                retention_class="transient_4h",
+            )
+        ],
+        timeline=TimelineV2(
+            tracks=[
+                VideoTrack(
+                    track_id="main",
+                    name="Main",
+                    segments=[
+                        VideoSegment(
+                            segment_id="tail-cut",
+                            source_id="source",
+                            timeline_start_us=0,
+                            timeline_duration_us=2_000_000,
+                            source_start_us=50_000,
+                            source_duration_us=2_000_000,
+                        )
+                    ],
+                )
+            ]
+        ),
+    )
+    profile = RenderProfile()
+    timeline = TimelineCompilerV2(profile).compile(
+        session_id=UUID(int=2), state_version=1, project=project, sources=sources
+    )
+    build = RenderBuildService().create(
+        tmp_path / "build",
+        timeline=timeline,
+        profile=profile,
+        capability=inspect_capabilities(tmp_path / "runtime"),
+    )
+    output = tmp_path / "tail-render.mp4"
+    FFmpegRenderer().render(build, sources, output)
+    verification = verify_output(build, output)
+    assert verification.expected_frames == verification.actual_frames == 60
+    assert verification.full_decode_succeeds and verification.audio_stream_actual

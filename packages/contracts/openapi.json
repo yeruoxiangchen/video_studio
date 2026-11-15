@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "CamCat API",
+    "title": "剪辑工作台 API",
     "description": "Multimodal intelligent video editing harness",
     "version": "0.1.0"
   },
@@ -134,6 +134,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -258,6 +278,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -454,6 +494,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       },
@@ -487,6 +547,18 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "name": "include_sessions",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include each project's first page of editing sessions",
+              "default": false,
+              "title": "Include Sessions"
+            },
+            "description": "Include each project's first page of editing sessions"
           },
           {
             "name": "X-User-Id",
@@ -649,6 +721,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -861,6 +953,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       },
@@ -1064,6 +1176,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -1245,6 +1377,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -1457,6 +1609,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -1645,6 +1817,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -1825,6 +2017,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -2038,6 +2250,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -2218,6 +2450,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -2414,6 +2666,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -2594,6 +2866,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -2807,6 +3099,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -2995,6 +3307,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -3175,6 +3507,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -3379,6 +3731,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -3559,6 +3931,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -3787,6 +4179,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -3975,6 +4387,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       },
@@ -4146,6 +4578,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -4360,6 +4812,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -4583,6 +5055,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -4798,6 +5290,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -4988,6 +5500,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -5194,6 +5726,244 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/agent/dispatch": {
+      "post": {
+        "summary": "Dispatch Editing Agent",
+        "operationId": "dispatch_editing_agent_api_v1_editing_sessions__session_id__agent_dispatch_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDispatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -5392,6 +6162,26 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -5580,6 +6370,26 @@
             }
           },
           "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
             "description": "CamCat error envelope",
             "content": {
               "application/json": {
@@ -5786,6 +6596,1598 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization/prepare": {
+      "post": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Prepare Source",
+        "operationId": "prepare_source_api_v1_editing_sessions__session_id__localization_prepare_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyLocalizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditingSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization": {
+      "get": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Context",
+        "operationId": "context_api_v1_editing_sessions__session_id__localization_get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "source_track_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Track Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalizationContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization/translate": {
+      "post": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Translate",
+        "operationId": "translate_api_v1_editing_sessions__session_id__localization_translate_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization/dub": {
+      "post": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Dub",
+        "operationId": "dub_api_v1_editing_sessions__session_id__localization_dub_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DubRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization/{job_id}/apply": {
+      "post": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Apply",
+        "operationId": "apply_api_v1_editing_sessions__session_id__localization__job_id__apply_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyLocalizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditingSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization/review": {
+      "post": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Confirm Review",
+        "operationId": "confirm_review_api_v1_editing_sessions__session_id__localization_review_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmLocalizationReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditingSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/editing/sessions/{session_id}/localization/delivery/{job_id}": {
+      "get": {
+        "tags": [
+          "localization"
+        ],
+        "summary": "Download Delivery",
+        "operationId": "download_delivery_api_v1_editing_sessions__session_id__localization_delivery__job_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "base_version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Base Version"
+            }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "X-Authenticated-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Authenticated-User"
+            }
+          },
+          {
+            "name": "X-CamCat-Proxy-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Camcat-Proxy-Secret"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "CamCat error envelope",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -5887,6 +8289,45 @@
         ],
         "title": "AddTrack"
       },
+      "AgentDispatchResponse": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "edit",
+              "translate",
+              "dub",
+              "translate_and_dub",
+              "clarify"
+            ],
+            "title": "Action"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "session": {
+            "$ref": "#/components/schemas/EditingSessionResponse"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "message",
+          "session"
+        ],
+        "title": "AgentDispatchResponse"
+      },
       "AgentEditRequest": {
         "properties": {
           "base_version": {
@@ -5974,6 +8415,21 @@
           "ranked_segments"
         ],
         "title": "AgenticSearchResponse"
+      },
+      "ApplyLocalizationRequest": {
+        "properties": {
+          "base_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_version"
+        ],
+        "title": "ApplyLocalizationRequest"
       },
       "AudioSegment": {
         "properties": {
@@ -6220,6 +8676,27 @@
         ],
         "title": "CommandAuditResponse"
       },
+      "ConfirmLocalizationReview": {
+        "properties": {
+          "base_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Version"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirmed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_version",
+          "confirmed"
+        ],
+        "title": "ConfirmLocalizationReview"
+      },
       "CreateEditingSessionRequest": {
         "properties": {
           "project_id": {
@@ -6285,6 +8762,106 @@
           "name"
         ],
         "title": "CreateProjectRequest"
+      },
+      "DeliveryStatus": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "needs_translation",
+              "needs_dubbing",
+              "needs_review",
+              "ready_to_render",
+              "rendering",
+              "ready",
+              "failed"
+            ],
+            "title": "State"
+          },
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Blockers"
+          },
+          "reviewed_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed Version"
+          },
+          "render_job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "package_download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Download Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "DeliveryStatus"
+      },
+      "DubRequest": {
+        "properties": {
+          "base_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Version"
+          },
+          "voice": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice"
+          },
+          "allow_duration_rewrite": {
+            "type": "boolean",
+            "title": "Allow Duration Rewrite",
+            "default": false
+          },
+          "original_audio_volume": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Original Audio Volume",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_version"
+        ],
+        "title": "DubRequest"
       },
       "EditCommandBatch": {
         "properties": {
@@ -6364,6 +8941,15 @@
                 },
                 {
                   "$ref": "#/components/schemas/UpdateGoal"
+                },
+                {
+                  "$ref": "#/components/schemas/SetVideoAudioVolume"
+                },
+                {
+                  "$ref": "#/components/schemas/SetLocalizationMetadata"
+                },
+                {
+                  "$ref": "#/components/schemas/SetRenderPolicy"
                 }
               ],
               "discriminator": {
@@ -6381,8 +8967,11 @@
                   "remove_transition": "#/components/schemas/RemoveTransition",
                   "rename_track": "#/components/schemas/RenameTrack",
                   "replace_segment_media": "#/components/schemas/ReplaceSegmentMedia",
+                  "set_localization_metadata": "#/components/schemas/SetLocalizationMetadata",
+                  "set_render_policy": "#/components/schemas/SetRenderPolicy",
                   "set_segment_transform": "#/components/schemas/SetSegmentTransform",
                   "set_transition": "#/components/schemas/SetTransition",
+                  "set_video_audio_volume": "#/components/schemas/SetVideoAudioVolume",
                   "split_segment": "#/components/schemas/SplitSegment",
                   "trim_segment": "#/components/schemas/TrimSegment",
                   "update_audio_segment": "#/components/schemas/UpdateAudioSegment",
@@ -6905,6 +9494,350 @@
         ],
         "title": "JobResponse"
       },
+      "LocalizationContext": {
+        "properties": {
+          "base_version": {
+            "type": "integer",
+            "title": "Base Version"
+          },
+          "source_track_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Track Id"
+          },
+          "target_track_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Track Id"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/SubtitleTrackInfo"
+            },
+            "type": "array",
+            "title": "Tracks"
+          },
+          "cues": {
+            "items": {
+              "$ref": "#/components/schemas/LocalizationCue"
+            },
+            "type": "array",
+            "title": "Cues"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/JobResponse"
+            },
+            "type": "array",
+            "title": "Jobs"
+          },
+          "tts_configured": {
+            "type": "boolean",
+            "title": "Tts Configured"
+          },
+          "tts_voice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tts Voice"
+          },
+          "tts_languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tts Languages"
+          },
+          "audio_outdated": {
+            "type": "boolean",
+            "title": "Audio Outdated",
+            "default": false
+          },
+          "translation_outdated": {
+            "type": "boolean",
+            "title": "Translation Outdated",
+            "default": false
+          },
+          "source_cues": {
+            "items": {
+              "$ref": "#/components/schemas/LocalizationCue"
+            },
+            "type": "array",
+            "title": "Source Cues"
+          },
+          "glossary": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Glossary"
+          },
+          "review_hints": {
+            "items": {
+              "$ref": "#/components/schemas/SourceReviewHint"
+            },
+            "type": "array",
+            "title": "Review Hints"
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "base_version",
+          "source_track_id",
+          "target_track_id",
+          "language",
+          "tracks",
+          "cues",
+          "jobs",
+          "tts_configured",
+          "tts_voice",
+          "tts_languages"
+        ],
+        "title": "LocalizationContext"
+      },
+      "LocalizationCue": {
+        "properties": {
+          "cue_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Cue Id"
+          },
+          "start_us": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start Us"
+          },
+          "duration_us": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Duration Us"
+          },
+          "source_text": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Source Text"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "cue_id",
+          "start_us",
+          "duration_us",
+          "source_text",
+          "text"
+        ],
+        "title": "LocalizationCue"
+      },
+      "LocalizationMetadata": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 2,
+            "title": "Language"
+          },
+          "source_track_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Track Id"
+          },
+          "target_track_id": {
+            "type": "string",
+            "title": "Target Track Id",
+            "default": ""
+          },
+          "source_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Source Version",
+            "default": 1
+          },
+          "source_text_by_id": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Source Text By Id"
+          },
+          "original_audio_volumes": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Original Audio Volumes"
+          },
+          "translation_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation Job Id"
+          },
+          "dubbing_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dubbing Job Id"
+          },
+          "dubbed_cues_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dubbed Cues Hash"
+          },
+          "subtitle_mode": {
+            "type": "string",
+            "enum": [
+              "bilingual",
+              "translated"
+            ],
+            "title": "Subtitle Mode",
+            "default": "bilingual"
+          },
+          "glossary": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Glossary"
+          },
+          "translated_source_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translated Source Hash"
+          },
+          "reviewed_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed Version"
+          },
+          "reviewed_content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed Content Hash"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "language",
+          "source_track_id"
+        ],
+        "title": "LocalizationMetadata"
+      },
       "MediaSourceRef": {
         "properties": {
           "source_id": {
@@ -6916,7 +9849,8 @@
             "type": "string",
             "enum": [
               "user_upload",
-              "licensed_library"
+              "licensed_library",
+              "generated_audio"
             ],
             "title": "Origin"
           },
@@ -6929,7 +9863,8 @@
             "type": "string",
             "enum": [
               "transient_4h",
-              "library"
+              "library",
+              "generated"
             ],
             "title": "Retention Class"
           },
@@ -7378,6 +10313,24 @@
         ],
         "title": "RenderRequest"
       },
+      "RenderingPolicy": {
+        "properties": {
+          "preserve_color": {
+            "type": "boolean",
+            "title": "Preserve Color",
+            "default": false
+          },
+          "preserve_audio": {
+            "type": "boolean",
+            "title": "Preserve Audio",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RenderingPolicy",
+        "description": "Versioned user choices, independent of encoder quality."
+      },
       "ReplaceSegmentMedia": {
         "properties": {
           "command_id": {
@@ -7495,6 +10448,54 @@
         ],
         "title": "SearchRequest"
       },
+      "SetLocalizationMetadata": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Command Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "set_localization_metadata",
+            "title": "Type",
+            "default": "set_localization_metadata"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/LocalizationMetadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metadata"
+        ],
+        "title": "SetLocalizationMetadata"
+      },
+      "SetRenderPolicy": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Command Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "set_render_policy",
+            "title": "Type",
+            "default": "set_render_policy"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/RenderingPolicy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy"
+        ],
+        "title": "SetRenderPolicy"
+      },
       "SetSegmentTransform": {
         "properties": {
           "command_id": {
@@ -7601,6 +10602,38 @@
         ],
         "title": "SetTransition"
       },
+      "SetVideoAudioVolume": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Command Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "set_video_audio_volume",
+            "title": "Type",
+            "default": "set_video_audio_volume"
+          },
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "audio_volume": {
+            "type": "number",
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Audio Volume"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "segment_id",
+          "audio_volume"
+        ],
+        "title": "SetVideoAudioVolume"
+      },
       "SourceMediaReference": {
         "properties": {
           "media_id": {
@@ -7689,6 +10722,42 @@
           "expires_at"
         ],
         "title": "SourceMediaReference"
+      },
+      "SourceReviewHint": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "start_seconds": {
+            "type": "number",
+            "title": "Start Seconds"
+          },
+          "end_seconds": {
+            "type": "number",
+            "title": "End Seconds"
+          },
+          "low_confidence_word_count": {
+            "type": "integer",
+            "title": "Low Confidence Word Count"
+          },
+          "words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Words"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "start_seconds",
+          "end_seconds",
+          "low_confidence_word_count",
+          "words"
+        ],
+        "title": "SourceReviewHint"
       },
       "SourceUploadResponse": {
         "properties": {
@@ -7842,6 +10911,34 @@
           "right_segment_id"
         ],
         "title": "SplitSegment"
+      },
+      "SubtitleTrackInfo": {
+        "properties": {
+          "track_id": {
+            "type": "string",
+            "title": "Track Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cue_count": {
+            "type": "integer",
+            "title": "Cue Count"
+          },
+          "is_translation": {
+            "type": "boolean",
+            "title": "Is Translation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "track_id",
+          "name",
+          "cue_count",
+          "is_translation"
+        ],
+        "title": "SubtitleTrackInfo"
       },
       "TextSegment": {
         "properties": {
@@ -8102,6 +11199,46 @@
           "duration_us"
         ],
         "title": "TransitionEdge"
+      },
+      "TranslateRequest": {
+        "properties": {
+          "base_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Version"
+          },
+          "target_language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})?$",
+            "title": "Target Language",
+            "default": "en"
+          },
+          "source_track_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Track Id"
+          },
+          "glossary": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Glossary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_version"
+        ],
+        "title": "TranslateRequest"
       },
       "TrimSegment": {
         "properties": {
@@ -8609,6 +11746,13 @@
             "maximum": 8.0,
             "minimum": 0.1,
             "title": "Speed",
+            "default": 1.0
+          },
+          "audio_volume": {
+            "type": "number",
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Audio Volume",
             "default": 1.0
           },
           "transform": {

@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from camcat.domain.localization import LocalizationMetadata
 from camcat.domain.project import (
     AudioSegment,
     Canvas,
@@ -13,6 +14,7 @@ from camcat.domain.project import (
     TimelineSegment,
     Track,
 )
+from camcat.domain.render_policy import RenderingPolicy
 
 
 class EditCommand(BaseModel):
@@ -193,6 +195,22 @@ class UpdateGoal(EditCommand):
     goal: str = Field(min_length=1)
 
 
+class SetVideoAudioVolume(EditCommand):
+    type: Literal["set_video_audio_volume"] = "set_video_audio_volume"
+    segment_id: str
+    audio_volume: float = Field(ge=0, le=4)
+
+
+class SetLocalizationMetadata(EditCommand):
+    type: Literal["set_localization_metadata"] = "set_localization_metadata"
+    metadata: LocalizationMetadata
+
+
+class SetRenderPolicy(EditCommand):
+    type: Literal["set_render_policy"] = "set_render_policy"
+    policy: RenderingPolicy
+
+
 DomainEditCommand = Annotated[
     InitializeEditingProject
     | RegisterSource
@@ -214,7 +232,10 @@ DomainEditCommand = Annotated[
     | SetTransition
     | RemoveTransition
     | UpdateTitle
-    | UpdateGoal,
+    | UpdateGoal
+    | SetVideoAudioVolume
+    | SetLocalizationMetadata
+    | SetRenderPolicy,
     Field(discriminator="type"),
 ]
 

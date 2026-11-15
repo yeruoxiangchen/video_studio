@@ -17,9 +17,9 @@ import {
   createCamCatApiClient,
   type EditingSessionResponse,
   type ProjectResponse,
+  type ProjectWithSessions,
 } from "./src/camcatApi";
 
-type ProjectWithSessions = ProjectResponse & { sessions: EditingSessionResponse[] };
 type OpenWorkspace = { project: ProjectResponse; session?: EditingSessionResponse; page?: ProductPage };
 
 function sourceMedia(session?: EditingSessionResponse): Array<{ playback_url?: string }> {
@@ -48,14 +48,7 @@ export default function CamCatApp() {
     setLoading(true);
     setError(undefined);
     try {
-      const page = await api.listProjects();
-      const hydrated = await Promise.all(
-        page.items.map(async (project) => ({
-          ...project,
-          sessions: (await api.listEditingSessions(project.project_id)).items,
-        })),
-      );
-      setProjects(hydrated);
+      setProjects(await api.listAllProjects());
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "加载项目失败");
     } finally {
@@ -154,7 +147,7 @@ function ProjectHomePage({
         <header data-testid="app-header" className="grid h-[72px] shrink-0 grid-cols-[minmax(360px,1fr)_420px_minmax(360px,1fr)] items-center border-b border-[#1b1d1f] bg-[#050606] px-5">
           <div className="flex min-w-0 items-center gap-3 text-white">
             <CamCatMark className="h-8 w-8" />
-            <span className="text-[26px] font-black leading-none">CamCat</span>
+            <span className="text-[26px] font-black leading-none">剪辑工作台</span>
             <span className="h-5 w-px bg-[#25282b]" />
             <span className="text-[12px] text-[#d7dde2]">项目列表</span>
           </div>
@@ -173,7 +166,7 @@ function ProjectHomePage({
             </div>
 
             {error && <div role="alert" className="mt-6 rounded-[14px] border border-[#7f1d1d] bg-[#2a1010] px-5 py-4 text-[13px] text-[#fca5a5]">{error}</div>}
-            {loading && !projects.length && <div className="mt-12 grid flex-1 place-items-center"><div className="flex items-center gap-3 text-[#858f99]"><Loader2 className="h-5 w-5 animate-spin" />正在从 CamCat API 加载项目</div></div>}
+            {loading && !projects.length && <div className="mt-12 grid flex-1 place-items-center"><div className="flex items-center gap-3 text-[#858f99]"><Loader2 className="h-5 w-5 animate-spin" />正在从 工作台服务 加载项目</div></div>}
             {!loading && !error && !projects.length && (
               <div className="mt-10 grid min-h-[340px] place-items-center rounded-[20px] border border-dashed border-[#30353a] bg-[#0b0c0d] text-center">
                 <div><BriefcaseBusiness className="mx-auto h-11 w-11 text-[#59636d]" /><h2 className="mt-5 text-xl font-semibold text-white">还没有项目</h2><p className="mt-2 text-[13px] text-[#747e87]">创建第一个项目，然后上传原片开始剪辑。</p><button type="button" onClick={onCreate} className="mt-6 rounded-[12px] bg-white px-5 py-3 text-[13px] font-semibold text-black">新建项目</button></div>
@@ -254,11 +247,11 @@ function CreateProjectDialog({ onClose, onCreate }: { onClose: () => void; onCre
     setError(undefined);
     try { await onCreate(name.trim()); } catch (caught) { setError(caught instanceof Error ? caught.message : "创建项目失败"); setBusy(false); }
   }
-  return <div role="dialog" aria-modal="true" aria-labelledby="create-project-title" className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-6 backdrop-blur-sm"><form onSubmit={(event) => void submit(event)} className="w-full max-w-[480px] rounded-[20px] border border-[#30353a] bg-[#0c0e0f] p-7 shadow-[0_30px_100px_rgba(0,0,0,0.7)]"><div className="flex items-center justify-between"><div><div className="text-[10px] font-semibold tracking-[0.2em] text-[#68727c]">NEW PROJECT</div><h2 id="create-project-title" className="mt-2 text-2xl font-semibold text-white">新建 CamCat 项目</h2></div><button type="button" onClick={onClose} aria-label="关闭" className="grid h-10 w-10 place-items-center rounded-[10px] text-[#8b949e] hover:bg-white/[0.05] hover:text-white"><X className="h-5 w-5" /></button></div><label className="mt-7 block text-[12px] text-[#9aa3ac]">项目名称<input autoFocus value={name} onChange={(event) => setName(event.target.value)} maxLength={255} placeholder="例如：旅行短片 2026" className="mt-2 h-12 w-full rounded-[12px] border border-[#30353a] bg-[#060708] px-4 text-[14px] text-white outline-none placeholder:text-[#505860] focus:border-[#609cc0]" /></label>{error && <div role="alert" className="mt-3 text-[12px] text-[#fca5a5]">{error}</div>}<div className="mt-7 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-[11px] border border-[#30353a] px-5 py-2.5 text-[12px] text-[#cbd3da]">取消</button><button type="submit" disabled={busy || !name.trim()} className="inline-flex items-center gap-2 rounded-[11px] bg-white px-5 py-2.5 text-[12px] font-semibold text-black disabled:opacity-40">{busy && <Loader2 className="h-4 w-4 animate-spin" />}创建并打开</button></div></form></div>;
+  return <div role="dialog" aria-modal="true" aria-labelledby="create-project-title" className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-6 backdrop-blur-sm"><form onSubmit={(event) => void submit(event)} className="w-full max-w-[480px] rounded-[20px] border border-[#30353a] bg-[#0c0e0f] p-7 shadow-[0_30px_100px_rgba(0,0,0,0.7)]"><div className="flex items-center justify-between"><div><div className="text-[10px] font-semibold tracking-[0.2em] text-[#68727c]">NEW PROJECT</div><h2 id="create-project-title" className="mt-2 text-2xl font-semibold text-white">新建 剪辑项目</h2></div><button type="button" onClick={onClose} aria-label="关闭" className="grid h-10 w-10 place-items-center rounded-[10px] text-[#8b949e] hover:bg-white/[0.05] hover:text-white"><X className="h-5 w-5" /></button></div><label className="mt-7 block text-[12px] text-[#9aa3ac]">项目名称<input autoFocus value={name} onChange={(event) => setName(event.target.value)} maxLength={255} placeholder="例如：旅行短片 2026" className="mt-2 h-12 w-full rounded-[12px] border border-[#30353a] bg-[#060708] px-4 text-[14px] text-white outline-none placeholder:text-[#505860] focus:border-[#609cc0]" /></label>{error && <div role="alert" className="mt-3 text-[12px] text-[#fca5a5]">{error}</div>}<div className="mt-7 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-[11px] border border-[#30353a] px-5 py-2.5 text-[12px] text-[#cbd3da]">取消</button><button type="submit" disabled={busy || !name.trim()} className="inline-flex items-center gap-2 rounded-[11px] bg-white px-5 py-2.5 text-[12px] font-semibold text-black disabled:opacity-40">{busy && <Loader2 className="h-4 w-4 animate-spin" />}创建并打开</button></div></form></div>;
 }
 
 function CamCatMark({ className }: { className?: string }) {
-  return <svg className={`${className ?? "h-8 w-8"} shrink-0 text-white`} viewBox="0 0 20 18" aria-label="CamCat pixel cat logo" role="img" shapeRendering="crispEdges"><path fill="currentColor" fillRule="evenodd" d="M1 1h5v2h8V1h5v11h-2v3h-3v2H6v-2H3v-3H1V1Zm2 2v9h2v2h3v1h4v-1h3v-2h2V3h-3v2H6V3H3Z" /><rect x="6" y="8" width="2" height="2" fill="currentColor" /><rect x="12" y="8" width="2" height="2" fill="currentColor" /><path d="M9 11h2v1h2v1H7v-1h2v-1Z" fill="currentColor" /></svg>;
+  return <svg className={`${className ?? "h-8 w-8"} shrink-0 text-white`} viewBox="0 0 24 24" aria-label="剪辑工作台标志" role="img" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18M9 3 6 9m10-6-3 6m-3 3 6 3-6 3v-6Z"/></svg>;
 }
 
 function formatProjectDate(value?: string) {

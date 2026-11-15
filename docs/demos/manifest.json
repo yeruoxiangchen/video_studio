@@ -1,0 +1,124 @@
+{
+  "product": "剪辑工作台",
+  "kind": "Authored business demonstration, separate from public quality evaluation",
+  "files": {
+    "01-agent-workflow.mp4": {
+      "sha256": "1e5e01b5819fd892b8847246a277ac1dfe68bf9093a7dc216f2092a279bfd342",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1152
+          }
+        ],
+        "format": {
+          "duration": "30.300000",
+          "size": "1602132"
+        }
+      },
+      "full_decode": "passed"
+    },
+    "02-panel-workflow.mp4": {
+      "sha256": "eb68ab54b79f20f8a6bdd8ce51d134f8fec1e698ed10728bc8f9eb8c12c410cf",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1152
+          }
+        ],
+        "format": {
+          "duration": "29.550000",
+          "size": "1958792"
+        }
+      },
+      "full_decode": "passed"
+    },
+    "03-earth-english.mp4": {
+      "sha256": "564d09ee98295494501ccceeb9efbd2ae591723c8784a59334f699bddaba8ef3",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1280,
+            "height": 720
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio"
+          }
+        ],
+        "format": {
+          "duration": "30.000000",
+          "size": "4915240"
+        }
+      },
+      "full_decode": "passed"
+    },
+    "workstation.png": {
+      "sha256": "4590e75189ade0e79cb69161c4b685987d11630e90fed74ef59c39edccfdf63b",
+      "bytes": 311225
+    }
+  },
+  "recording": "Real Playwright browser against Docker Compose and local providers; screen recordings have no audio",
+  "editing": {
+    "agent_segments_seconds": [
+      [
+        0,
+        5.648
+      ],
+      [
+        73.443,
+        82.072
+      ],
+      [
+        114.643,
+        121.511
+      ],
+      [
+        146.16,
+        150.96
+      ]
+    ],
+    "agent_clip_omits_waiting": true,
+    "panel_recording": "Full continuous recording with a descriptive header",
+    "english_video": "Actual delivered output resized to 1280x720; original generated AAC audio copied unchanged"
+  },
+  "observed_run_seconds": {
+    "analysis": 73.8,
+    "translation_and_dubbing": 37.6,
+    "render_and_polling": 28.6
+  },
+  "source_correction": "User-authored Chinese script entered through the editor; actual Qwen/Piper outputs preserved",
+  "source_output_sha256": "9988c1b1270a7be2b0e061c8ba9d5c6066697dce9cddbf1cf88d30dcc6eac6af",
+  "ui_delivery_version": 6,
+  "provenance": {
+    "visuals": {
+      "title": "Seeing Earth as Only NASA Can",
+      "credit": "NASA",
+      "url": "https://svs.gsfc.nasa.gov/14831/",
+      "original_music": "Universal Production Music; removed"
+    },
+    "english_speech": {
+      "engine": "Piper",
+      "voice": "en_US-lessac-medium",
+      "model_card": "https://huggingface.co/rhasspy/piper-voices/blob/b145f2ac26522d6a2ccde0164b7b0e48b1e3199c/en/en_US/lessac/medium/MODEL_CARD"
+    },
+    "upstream_code": {
+      "url": "https://github.com/Kehan-Peng/CamCat-Agentic-Cut-Platform",
+      "commit": "1e8d0492a9793f47d9a69362378fb2535f386b52",
+      "license": "MIT"
+    }
+  }
+}

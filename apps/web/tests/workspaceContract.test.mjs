@@ -34,15 +34,24 @@ test("editor reads output geometry from the authoritative canvas", () => {
   assert.match(source, /multiple onChange=\{onFileChange\}/);
 });
 
-test("pixel cat uses the design outline instead of scattered mosaic pixels", () => {
-  assert.match(source, /viewBox="0 0 20 18"/);
-  assert.match(source, /data-logo-part="outline"/);
-  assert.equal(source.includes("].map(([x, y]) =>"), false);
+test("workstation has generic editing branding and chat localization entry points", () => {
+  assert.match(source, /剪辑工作台/);
+  assert.match(appSource, /剪辑工作台/);
+  assert.match(source, /dispatchAgentAction/);
+  assert.match(source, /next_job_id/);
+  assert.doesNotMatch(source, />CamCat</);
+  assert.doesNotMatch(source, /ASSISTANT \/ CAMCAT/);
 });
 
 test("the first search runs retrieval and plan generation as one workflow", () => {
   assert.match(source, /runSearchAndPlan/);
   assert.match(source, /setEditingSession\(result\.editingSession\)/);
+});
+
+test("a completed original upload opens a persisted session before panel localization", () => {
+  const upload = source.slice(source.indexOf("async function handleUpload"), source.indexOf("async function handleSearch"));
+  assert.match(upload, /api\.createEditingSession/);
+  assert.match(upload, /setEditingSession\(session\)/);
 });
 
 test("project navigation stays beside content with an explicit two-column layout", () => {
@@ -75,4 +84,17 @@ test("same-origin proxy re-resolves the API after Compose service recreation", (
   assert.match(nginxSource, /resolver 127\.0\.0\.11 valid=10s;/);
   assert.match(nginxSource, /set \$camcat_api http:\/\/api:8000;/);
   assert.match(nginxSource, /proxy_pass \$camcat_api;/);
+});
+
+test("Compose content policy permits local MinIO thumbnails and playback", () => {
+  for (const directive of ["img-src", "media-src"]) {
+    const sources = nginxSource.match(new RegExp(`${directive} ([^;"]+)`))?.[1].split(" ");
+    assert.ok(sources?.includes("http://127.0.0.1:18963"));
+    assert.ok(sources?.includes("http://localhost:18963"));
+  }
+});
+
+test("render failures expose an accessible alert", () => {
+  const renderPage = source.slice(source.indexOf("function RenderStatusPage("));
+  assert.ok(/<p role=\{failed \? "alert" : "status"\}/.test(renderPage));
 });

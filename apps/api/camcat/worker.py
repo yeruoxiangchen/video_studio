@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import signal
@@ -16,6 +17,9 @@ from sqlalchemy import delete, select, text
 from camcat.config import get_settings
 from camcat.database import SessionLocal
 from camcat.domain.project import EditingProjectV2
+from camcat.domain.state_patch import PatchConflict
+from camcat.localization.plans import validate_dubbed_state
+from camcat.localization.service import LocalizationService
 from camcat.media.ffmpeg import (
     detect_scene_cuts,
     extract_audio,
@@ -51,10 +55,13 @@ from camcat.repositories import JobRepository, sanitize_job_error
 from camcat.retrieval.milvus_store import MilvusSegmentStore
 from camcat.services.object_store import ObjectStore
 from camcat.services.providers import (
+    ProviderError,
     QwenAsrClient,
     QwenChatClient,
     QwenEmbeddingClient,
     QwenVisualAnalysisClient,
+    SourceClipSemantics,
+    source_visual_contract_digest,
 )
 from camcat.timeline.compiler import TimelineCompilerV2
 from camcat.timeline.schemas import RenderProfile
@@ -63,6 +70,20 @@ from camcat.timeline.validator import (
     content_hash,
     verify_compiled_timeline,
 )
+
+
+def job_kinds_for_role(role: str) -> frozenset[JobKind] | None:
+    if role == "all":
+        return None
+    if role == "render":
+        return frozenset({JobKind.RENDER})
+    if role == "control":
+        return frozenset(JobKind) - {JobKind.RENDER}
+    if role == "analysis":
+        return frozenset({JobKind.INGEST_MEDIA, JobKind.ANALYZE_SOURCE})
+    if role == "localization":
+        return frozenset({JobKind.TRANSLATE_SUBTITLES, JobKind.DUB_SUBTITLES})
+    raise ValueError(f"unknown worker role: {role}")
 
 
 class Worker:
@@ -81,7 +102,8 @@ class Worker:
     def bootstrap(self) -> None:
         Path(self.settings.runtime_dir).mkdir(parents=True, exist_ok=True)
         self.object_store.ensure_bucket()
-        self.milvus.ensure_collection()
+        if self.settings.worker_role != "render":
+            self.milvus.ensure_collection()
         self.capabilities = inspect_capabilities(
             Path(self.settings.runtime_dir),
             object_store_healthcheck=self.object_store.ensure_bucket,
@@ -92,12 +114,16 @@ class Worker:
         while self.running:
             with SessionLocal() as db:
                 repository = JobRepository(db)
-                if time.monotonic() - self._last_maintenance >= 60:
+                if (
+                    self.settings.worker_role != "render"
+                    and time.monotonic() - self._last_maintenance >= 60
+                ):
                     self._run_maintenance(repository)
                     self._last_maintenance = time.monotonic()
                 job = repository.claim_next(
                     worker_id=self.settings.worker_id,
                     lease_seconds=self.settings.job_lease_seconds,
+                    kinds=job_kinds_for_role(self.settings.worker_role),
                 )
                 if job is None:
                     time.sleep(self.settings.worker_poll_seconds)
@@ -153,6 +179,11 @@ class Worker:
                     {"payload": expired_job.payload, "result": expired_job.result}
                 ):
                     self.object_store.delete_key(storage_key)
+                if expired_job.kind in {JobKind.TRANSLATE_SUBTITLES, JobKind.DUB_SUBTITLES}:
+                    raw_session = expired_job.payload.get("session_id")
+                    if raw_session:
+                        session_id = UUID(str(raw_session))
+                        self.object_store.delete_prefix(f"temporary/localization/{session_id}/")
             repository.redact_expired(now=cutoff)
             expired_evidence = repository.db.scalars(
                 select(Job).where(
@@ -248,10 +279,65 @@ class Worker:
                 return self.analyze_source(job, repository)
             if job.kind == JobKind.RENDER:
                 return self.render(job, repository)
+            if job.kind in {JobKind.TRANSLATE_SUBTITLES, JobKind.DUB_SUBTITLES}:
+                # A recovered worker must not regenerate a version already applied atomically.
+                if job.result and job.result.get("applied_version"):
+                    return dict(job.result)
+                result = LocalizationService(self.settings, self.object_store).run(job, repository)
+                if job.payload.get("agent_action"):
+                    from camcat.localization.operations import apply_localization
+                    from camcat.localization.schemas import ApplyLocalizationRequest
+
+                    repository.update_progress(job, 0.95)
+                    job.result = result
+                    job.status = JobStatus.SUCCEEDED
+                    job.finished_at = utcnow()
+                    job.lease_expires_at = None
+                    apply_localization(
+                        UUID(str(job.payload["session_id"])),
+                        job.id,
+                        ApplyLocalizationRequest(base_version=int(job.payload["source_version"])),
+                        repository.db,
+                        job.owner_id,
+                        self.settings,
+                    )
+                    return dict(job.result or result)
+                return result
             raise ValueError(f"unsupported job kind: {job.kind}")
         finally:
             if job.kind != JobKind.RENDER:
                 shutil.rmtree(job_dir, ignore_errors=True)
+
+    def _source_visual(
+        self, job: Job, jobs: JobRepository, source: Path, media_id: str
+    ) -> SourceClipSemantics:
+        analysis_model = (
+            getattr(self.settings, "visual_analysis_model", None) or self.settings.llm_model
+        )
+        identity = hashlib.sha256(
+            (analysis_model + source_visual_contract_digest()).encode()
+            + hashlib.sha256(source.read_bytes()).digest()
+        ).hexdigest()
+        cache = dict((job.checkpoint or {}).get("source_visual_cache", {}))
+        entry = cache.get(media_id, {})
+        if isinstance(entry, dict) and entry.get("identity") == identity:
+            try:
+                return SourceClipSemantics.model_validate(entry["analysis"])
+            except (KeyError, ValueError):
+                pass
+        started = time.monotonic()
+        semantics = self.visual_analysis.analyze_video(source, compact=True)
+        typed = SourceClipSemantics.model_validate(semantics.model_dump(mode="json"))
+        usage = getattr(self.visual_analysis, "last_analysis_usage", {})
+        cache[media_id] = {
+            "identity": identity,
+            "analysis": typed.model_dump(mode="json"),
+            "seconds": round(time.monotonic() - started, 4),
+            "usage": usage if isinstance(usage, dict) else {},
+        }
+        checkpoint = {**dict(job.checkpoint or {}), "source_visual_cache": cache}
+        jobs.update_progress(job, job.progress, checkpoint=checkpoint)
+        return typed
 
     def analyze_source(self, job: Job, jobs: JobRepository) -> dict[str, Any]:
         """Analyze user originals without inserting Asset/Segment or Milvus entities."""
@@ -262,9 +348,8 @@ class Worker:
         job_dir = Path(self.settings.runtime_dir) / "jobs" / str(job.id)
         analyzed_media: list[dict[str, Any]] = []
         analyzed_segments: list[dict[str, Any]] = []
-        estimated_segments = 0
-
-        for item in source_media:
+        for media_index, item in enumerate(source_media):
+            jobs.checkpoint(job, "source_media_started", {"media_index": media_index})
             source = job_dir / "sources" / f"{item['media_id']}.mp4"
             self.object_store.download_file(str(item["storage_key"]), source)
             metadata = probe(source)
@@ -280,31 +365,51 @@ class Worker:
                 ),
                 event_times=[] if analysis_mode == "per-second" else cuts,
             )
-            estimated_segments += len(boundaries)
+            jobs.checkpoint(job, "source_windows_ready", {"segment_count": len(boundaries)})
+            jobs.checkpoint(job, "source_visual_started", {"media_index": media_index})
+            semantics = self._source_visual(job, jobs, source, str(item["media_id"]))
             enriched = {
                 **item,
                 "duration_seconds": metadata.duration,
                 "width": metadata.width,
                 "height": metadata.height,
                 "has_audio": metadata.has_audio,
+                "visual_semantics": semantics.model_dump(mode="json"),
+                "visual_evidence": {
+                    "media_id": item["media_id"],
+                    "start_time": 0,
+                    "end_time": metadata.duration,
+                    "scope": "whole_media",
+                    "model": getattr(self.settings, "visual_analysis_model", None)
+                    or self.settings.llm_model,
+                },
             }
+            jobs.checkpoint(job, "source_visual_ready", {"media_index": media_index})
             analyzed_media.append(enriched)
 
             for boundary_index, boundary in enumerate(boundaries):
                 source_segment_id = f"source:{item['media_id']}:{boundary_index + 1}"
-                clip = job_dir / "analysis" / f"{item['media_id']}-{boundary_index}.mp4"
                 thumbnail = job_dir / "thumbnails" / f"{item['media_id']}-{boundary_index}.jpg"
-                extract_clip(source, clip, start=boundary.start, end=boundary.end)
-                extract_thumbnail(clip, thumbnail, at=max(0.0, (boundary.end - boundary.start) / 2))
+                jobs.checkpoint(
+                    job,
+                    "source_segment_started",
+                    {"media_index": media_index, "segment_index": boundary_index},
+                )
+                # Analysis only needs bounded reads of the original. Encoding a disposable
+                # full-resolution intermediate adds latency and an extra lossy generation.
+                extract_thumbnail(source, thumbnail, at=(boundary.start + boundary.end) / 2)
                 transcript = ""
                 transcript_cues: list[dict[str, Any]] = []
+                transcription: dict[str, Any] = {}
                 if metadata.has_audio:
                     audio = job_dir / "audio" / f"{item['media_id']}-{boundary_index}.mp3"
-                    extract_audio(clip, audio)
+                    extract_audio(source, audio, start=boundary.start, end=boundary.end)
+                    jobs.checkpoint(job, "source_audio_ready")
                     transcription = self.asr.transcribe(audio)
                     transcript = str(transcription.get("text") or "").strip()
                     transcript_cues = _transcription_cues(transcription)
-                quality = measure_visual_quality(clip)
+                jobs.checkpoint(job, "source_quality_started")
+                quality = measure_visual_quality(source, start=boundary.start, end=boundary.end)
                 signature = shot_signature(thumbnail)
                 thumbnail_key = (
                     f"temporary/{job.owner_id}/{job.payload['batch_id']}/analysis/"
@@ -335,15 +440,30 @@ class Worker:
                         "description_text": description,
                         "transcript": transcript,
                         "transcript_cues": transcript_cues,
+                        "transcript_evidence": {
+                            key: transcription[key]
+                            for key in (
+                                "model",
+                                "language",
+                                "language_probability",
+                                "raw_text",
+                                "normalization",
+                                "quality",
+                                "segments",
+                            )
+                            if key in transcription
+                        },
                         "quality_score": quality,
                         "shot_signature": signature,
                         "trigger_type": boundary.trigger_type,
                     }
                 )
-                processed = len(analyzed_segments)
                 jobs.update_progress(
                     job,
-                    min(0.95, 0.05 + 0.9 * processed / max(1, estimated_segments)),
+                    0.05
+                    + 0.9
+                    * (media_index + (boundary_index + 1) / len(boundaries))
+                    / len(source_media),
                 )
 
         return {
@@ -540,6 +660,7 @@ class Worker:
         source_dir = job_dir / "sources"
         sources: MaterializedSources = {}
         project = EditingProjectV2.model_validate(version.document)
+        validate_dubbed_state(project)
         used_ids = {
             segment.source_id
             for track in project.timeline.tracks
@@ -562,6 +683,12 @@ class Worker:
                 storage_key=storage_key,
                 retention_class=source_ref.retention_class,
             )
+            if (
+                source_ref.origin == "generated_audio"
+                and source_ref.metadata.get("sha256")
+                and sources[source_id].ref.sha256 != source_ref.metadata["sha256"]
+            ):
+                raise MediaFingerprintError("generated speech source changed after localization")
             jobs.update_progress(job, 0.08 + 0.17 * ((index + 1) / max(1, len(used_ids))))
         jobs.checkpoint(job, "sources_fingerprinted", {"source_count": len(sources)})
 
@@ -737,6 +864,8 @@ class FailureCategory(StrEnum):
 
 
 def _failure_category(error: Exception) -> FailureCategory:
+    if isinstance(error, ProviderError) and not error.retryable:
+        return FailureCategory.DETERMINISTIC_VALIDATION
     if isinstance(error, MediaFingerprintError):
         return FailureCategory.ARTIFACT_DRIFT
     if isinstance(error, OutputVerificationError):
@@ -744,7 +873,8 @@ def _failure_category(error: Exception) -> FailureCategory:
     if isinstance(error, FFmpegRenderError):
         return FailureCategory.UNSUPPORTED_FEATURE
     if isinstance(
-        error, (BuildVerificationError, TimelineValidationError, LookupError, ValueError)
+        error,
+        (BuildVerificationError, TimelineValidationError, LookupError, ValueError, PatchConflict),
     ):
         return FailureCategory.DETERMINISTIC_VALIDATION
     return FailureCategory.RETRYABLE_INFRASTRUCTURE

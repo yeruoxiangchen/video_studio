@@ -37,6 +37,8 @@ class JobKind(StrEnum):
     INGEST_MEDIA = "ingest_media"
     ANALYZE_SOURCE = "analyze_source"
     RENDER = "render"
+    TRANSLATE_SUBTITLES = "translate_subtitles"
+    DUB_SUBTITLES = "dub_subtitles"
 
 
 class Project(Base):

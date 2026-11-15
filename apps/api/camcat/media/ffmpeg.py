@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import subprocess
 from dataclasses import dataclass
@@ -18,20 +19,21 @@ class MediaMetadata:
     width: int
     height: int
     has_audio: bool
+    video_duration: float = 0.0
 
 
 def shot_signature(thumbnail: Path) -> str:
     return hashlib.sha256(thumbnail.read_bytes()).hexdigest()[:24]
 
 
-def measure_visual_quality(path: Path) -> float:
+def measure_visual_quality(path: Path, *, start: float = 0.0, end: float | None = None) -> float:
     """Return a bounded, real-media quality signal using FFmpeg's blur detector."""
     result = _run(
         [
             "ffmpeg",
+            "-nostdin",
             "-hide_banner",
-            "-i",
-            str(path),
+            *_input_window(path, start=start, end=end),
             "-vf",
             "scale=320:-2,blurdetect=block_width=32:block_height=32:block_pct=80",
             "-an",
@@ -70,11 +72,18 @@ def probe(path: Path) -> MediaMetadata:
     duration = float(payload.get("format", {}).get("duration") or video.get("duration") or 0)
     if duration <= 0:
         raise MediaCommandError("uploaded media duration is unavailable")
+    try:
+        visual_duration = float(video.get("duration") or duration)
+    except (TypeError, ValueError):
+        visual_duration = duration
+    if not math.isfinite(visual_duration) or visual_duration <= 0:
+        visual_duration = duration
     return MediaMetadata(
         duration=duration,
         width=int(video.get("width") or 0),
         height=int(video.get("height") or 0),
         has_audio=any(item.get("codec_type") == "audio" for item in streams),
+        video_duration=min(duration, visual_duration),
     )
 
 
@@ -151,15 +160,44 @@ def extract_thumbnail(source: Path, target: Path, *, at: float) -> None:
     )
 
 
-def extract_audio(source: Path, target: Path) -> None:
+def extract_analysis_frame(source: Path, target: Path, *, at: float) -> None:
+    """Keep analysis sampling identical on host and Compose without encoding a video copy."""
     target.parent.mkdir(parents=True, exist_ok=True)
     _run(
         [
             "ffmpeg",
-            "-y",
-            "-hide_banner",
+            "-nostdin",
+            "-v",
+            "error",
+            "-threads",
+            "2",
+            "-ss",
+            f"{at:.4f}",
             "-i",
             str(source),
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=512:-2",
+            "-q:v",
+            "2",
+            "-y",
+            str(target),
+        ]
+    )
+
+
+def extract_audio(
+    source: Path, target: Path, *, start: float = 0.0, end: float | None = None
+) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    _run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-y",
+            "-hide_banner",
+            *_input_window(source, start=start, end=end),
             "-vn",
             "-ac",
             "1",
@@ -172,8 +210,31 @@ def extract_audio(source: Path, target: Path) -> None:
     )
 
 
-def _run(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(args, capture_output=True, text=True, check=False)
+def _input_window(source: Path, *, start: float, end: float | None) -> list[str]:
+    if start < 0 or (end is not None and end <= start):
+        raise ValueError("media window must have nonnegative start and end > start")
+    args = ["-ss", f"{start:.6f}"]
+    if end is not None:
+        args.extend(["-t", f"{end - start:.6f}"])
+    return [*args, "-i", str(source)]
+
+
+def _run(
+    args: list[str], *, check: bool = True, timeout_seconds: float = 300.0
+) -> subprocess.CompletedProcess[str]:
+    try:
+        result = subprocess.run(
+            args,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise MediaCommandError(
+            f"command {args[0]} timed out after {timeout_seconds:g} seconds"
+        ) from exc
     if check and result.returncode != 0:
         raise MediaCommandError(
             f"command {args[0]} failed ({result.returncode}): {result.stderr[-4000:]}"

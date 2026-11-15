@@ -1,0 +1,29 @@
+{
+  "version": "camcat-public-pilot-v1",
+  "purpose": "Small public-data pilot before deciding whether to expand",
+  "msrvtt": {
+    "repository": "VLM2Vec/MSR-VTT",
+    "revision": "947b139d0c591235a3f311e45a31a88461bad0d2",
+    "annotation": "msrvtt_test_1k.json",
+    "query_count": 20,
+    "candidate_count": 100,
+    "selection_seed": 20261113,
+    "official_source_revision": "393e2978d27852b0d0230d6994f37f9c15bed73c",
+    "num_frames": 64,
+    "max_frames_saved": 64,
+    "dimensions": [4096, 2048],
+    "gpu": 2,
+    "gpu_memory_budget_mib": 21135
+  },
+  "agentic": {
+    "repository": "PhiloLabs/agentic-vbench",
+    "revision": "b2764ed4b2a4b5a1737026b63887b50bba62f793",
+    "tasks": [
+      {"family": "assembly", "id": "agentic-vbench-assembly-task1", "dataset": "ameddserM/agentic_vbench_video_assembly", "archive": "materials/1.zip", "clip_count": 12},
+      {"family": "sequencing", "id": "agentic-vbench-sequencing-task1", "dataset": "ameddserM/agentic_vbench_video_sequencing", "archive": "materials/1.zip", "clip_count": 13}
+    ],
+    "agent_timeout_seconds": 1800,
+    "verifier_timeout_seconds": 1800,
+    "task_attempts": 1
+  }
+}

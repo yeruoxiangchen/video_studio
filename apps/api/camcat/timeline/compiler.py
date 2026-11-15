@@ -3,7 +3,9 @@ from __future__ import annotations
 from fractions import Fraction
 from uuid import UUID
 
-from camcat.domain.project import AudioTrack, EditingProjectV2, TextTrack, VideoTrack
+from camcat.domain.localization import hidden_duplicate_caption_ids
+from camcat.domain.project import AudioTrack, EditingProjectV2, TextTrack, VideoSegment, VideoTrack
+from camcat.rendering.captions import caption_presentation
 from camcat.rendering.materialization import MaterializedMedia, MaterializedSources
 from camcat.timeline.frames import frame_to_us, round_ratio, us_range_to_frames, us_to_frame
 from camcat.timeline.schemas import (
@@ -30,6 +32,57 @@ class TimelineCompilerV2:
     def __init__(self, profile: RenderProfile) -> None:
         self.profile = profile
 
+    @staticmethod
+    def source_render_window(
+        segment: VideoSegment,
+        *,
+        head_frames: int,
+        tail_frames: int,
+        fps_num: int,
+        fps_den: int,
+        source_duration_us: int,
+    ) -> tuple[int, int]:
+        speed = Fraction(str(segment.speed))
+        head_us = round_ratio(
+            frame_to_us(head_frames, fps_num, fps_den) * speed.numerator, speed.denominator
+        )
+        tail_us = round_ratio(
+            frame_to_us(tail_frames, fps_num, fps_den) * speed.numerator, speed.denominator
+        )
+        start = segment.source_start_us - head_us
+        end = segment.source_start_us + segment.source_duration_us + tail_us
+        if start < 0 or end > source_duration_us:
+            reason = (
+                "transition source handles are insufficient"
+                if head_frames or tail_frames
+                else "source range is out of bounds"
+            )
+            raise TimelineValidationError(f"{reason}: {segment.segment_id}")
+        return start, end
+
+    @classmethod
+    def validate_source_ranges(
+        cls, project: EditingProjectV2, source_durations: dict[str, int]
+    ) -> None:
+        fps_num, fps_den = project.canvas.fps_num, project.canvas.fps_den
+        edges = cls._compile_transitions(project, fps_num, fps_den)
+        incoming = {edge.right_segment_id: edge.duration_frames // 2 for edge in edges}
+        outgoing = {
+            edge.left_segment_id: edge.duration_frames - edge.duration_frames // 2 for edge in edges
+        }
+        for track in project.timeline.tracks:
+            if isinstance(track, VideoTrack):
+                for segment in track.segments:
+                    if segment.source_id in source_durations:
+                        cls.source_render_window(
+                            segment,
+                            head_frames=incoming.get(segment.segment_id, 0),
+                            tail_frames=outgoing.get(segment.segment_id, 0),
+                            fps_num=fps_num,
+                            fps_den=fps_den,
+                            source_duration_us=source_durations[segment.source_id],
+                        )
+
     def compile(
         self,
         *,
@@ -46,6 +99,8 @@ class TimelineCompilerV2:
         edge_by_right = {item.right_segment_id: item for item in edges}
         video_tracks: list[CompiledVideoTrack] = []
         text_tracks: list[CompiledTextTrack] = []
+        hidden_captions = hidden_duplicate_caption_ids(project)
+        displayed_captions = caption_presentation(project)
         audio_tracks: list[CompiledAudioTrack] = []
         used_sources: set[str] = set()
         for track in project.timeline.tracks:
@@ -70,21 +125,14 @@ class TimelineCompilerV2:
                     tail_frames = (
                         outgoing.duration_frames - outgoing.duration_frames // 2 if outgoing else 0
                     )
-                    speed = Fraction(str(segment.speed))
-                    head_us = round_ratio(
-                        frame_to_us(head_frames, fps_num, fps_den) * speed.numerator,
-                        speed.denominator,
+                    render_start_us, render_end_us = self.source_render_window(
+                        segment,
+                        head_frames=head_frames,
+                        tail_frames=tail_frames,
+                        fps_num=fps_num,
+                        fps_den=fps_den,
+                        source_duration_us=ref.duration_us,
                     )
-                    tail_us = round_ratio(
-                        frame_to_us(tail_frames, fps_num, fps_den) * speed.numerator,
-                        speed.denominator,
-                    )
-                    render_start_us = segment.source_start_us - head_us
-                    render_end_us = segment.source_start_us + segment.source_duration_us + tail_us
-                    if render_start_us < 0 or render_end_us > ref.duration_us:
-                        raise TimelineValidationError(
-                            f"transition source handles are insufficient: {segment.segment_id}"
-                        )
                     compiled = CompiledVideoSegment(
                         track_id=track.track_id,
                         segment_id=segment.segment_id,
@@ -99,6 +147,7 @@ class TimelineCompilerV2:
                         render_start_frame=visible_start - head_frames,
                         render_duration_frames=visible_frames + head_frames + tail_frames,
                         speed=segment.speed,
+                        audio_volume=segment.audio_volume,
                         transform=segment.transform,
                         reason=segment.reason,
                         evidence=[item.model_dump(mode="json") for item in segment.evidence],
@@ -125,7 +174,9 @@ class TimelineCompilerV2:
                                 text=item.text,
                                 style=item.style,
                             )
-                            for item in track.segments
+                            for original in track.segments
+                            if original.segment_id not in hidden_captions
+                            for item in displayed_captions.get(original.segment_id, [original])
                         ],
                     )
                 )

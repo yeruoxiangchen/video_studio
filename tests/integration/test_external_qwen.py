@@ -77,6 +77,12 @@ def test_real_structured_llm_and_asr(tmp_path: Path) -> None:
     intent = chat.json_completion(
         system="Return strict JSON with a non-empty summary field.",
         user="为一条旅行 vlog 生成简短剪辑目标。",
+        response_schema={
+            "type": "object",
+            "properties": {"summary": {"type": "string", "minLength": 1}},
+            "required": ["summary"],
+            "additionalProperties": False,
+        },
     )
     assert str(intent.get("summary", "")).strip()
     audio = tmp_path / "audio.mp3"
@@ -111,7 +117,8 @@ def test_real_agent_finishes_after_browser_disconnect() -> None:
             )
         uploaded.raise_for_status()
         source_job_id = uploaded.json()["job_id"]
-        deadline = time.monotonic() + 180
+        source_timeout = int(os.environ.get("CAMCAT_TEST_SOURCE_TIMEOUT", "180"))
+        deadline = time.monotonic() + source_timeout
         while time.monotonic() < deadline:
             source_job = client.get(f"/api/v1/jobs/{source_job_id}")
             source_job.raise_for_status()
@@ -120,7 +127,7 @@ def test_real_agent_finishes_after_browser_disconnect() -> None:
             assert source_job.json()["status"] not in ("failed", "dead_letter")
             time.sleep(1)
         else:
-            pytest.fail("Source analysis did not finish within 180 seconds")
+            pytest.fail(f"Source analysis did not finish within {source_timeout} seconds")
         created = client.post(
             "/api/v1/editing/sessions",
             json={"current_goal": "测试断线恢复", "source_job_id": source_job_id},
@@ -144,7 +151,8 @@ def test_real_agent_finishes_after_browser_disconnect() -> None:
                         run_id = json.loads(line[5:])["graph_run_id"]
                         break
             assert run_id
-            deadline = time.monotonic() + 90
+            agent_timeout = int(os.environ.get("CAMCAT_TEST_AGENT_TIMEOUT", "90"))
+            deadline = time.monotonic() + agent_timeout
             while time.monotonic() < deadline:
                 response = client.get(f"/api/v1/graph-runs/{run_id}")
                 response.raise_for_status()
@@ -158,6 +166,6 @@ def test_real_agent_finishes_after_browser_disconnect() -> None:
                     return
                 assert run["status"] not in ("failed", "dead_letter"), run.get("error")
                 time.sleep(0.5)
-            pytest.fail("Disconnected agent did not finish within 90 seconds")
+            pytest.fail(f"Disconnected agent did not finish within {agent_timeout} seconds")
         finally:
             client.delete(f"/api/v1/editing/sessions/{session_id}")

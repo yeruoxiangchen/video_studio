@@ -1,0 +1,22 @@
+{
+  "repository": "unsloth/Qwen3.6-27B-GGUF",
+  "revision": "82d411acf4a06cfb8d9b073a5211bf410bfc29bf",
+  "base_model": "Qwen/Qwen3.6-27B",
+  "base_revision": "8f33b98937c6031bb49e713dee3e8e185aafd26f",
+  "license": "Apache-2.0",
+  "mirror_revision": "35d986509c6f1379e57ac27e9edaf2b10343d080",
+  "directory": "models/Qwen3.6-27B-GGUF",
+  "model_alias": "Qwen/Qwen3.6-27B",
+  "files": [
+    {"file": "Qwen3.6-27B-Q4_K_M.gguf", "bytes": 16817244384,
+     "sha256": "5ed60d0af4650a854b1755bd392f9aef4872643dc25a254bc68043fa638392a0"},
+    {"file": "mmproj-F16.gguf", "bytes": 927607360,
+     "sha256": "eacf610d1ee4bd5ed0197a0777dd8f4fceb8eefa27009067c7d496cb68fbde45"}
+  ],
+  "runtime_repository": "ggml-org/llama.cpp",
+  "runtime_revision": "9d25e0014c4b4b316873c01f4938c0e3c687287d",
+  "runtime_directory": "tools/llama-native-b12375",
+  "gpu_budget_mib": 21135,
+  "context_tokens": 16384,
+  "reasoning_tokens": 1024
+}

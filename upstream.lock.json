@@ -1,0 +1,23 @@
+{
+  "project": "剪辑工作台",
+  "basis": "A CamCat-derived multimodal video editing application with localization extensions",
+  "upstream": {
+    "url": "https://github.com/Kehan-Peng/CamCat-Agentic-Cut-Platform.git",
+    "commit": "1e8d0492a9793f47d9a69362378fb2535f386b52",
+    "license": "MIT",
+    "local_branch": "localization-v1"
+  },
+  "storage": "/data/zjr/camcat_studio",
+  "extension_scope": [
+    "Versioned subtitle translation within the existing CamCat editing workspace",
+    "Per-cue speech synthesis and duration validation",
+    "Generated dialogue tracks rendered through the CamCat timeline compiler",
+    "Persistent localization jobs with progress, cancellation and result application",
+    "Chat-selected localization tools share the panel services and durable queue",
+    "Version-bound review and customer delivery packages"
+  ],
+  "reference": {
+    "videolingo": "https://github.com/Huanshere/VideoLingo",
+    "purpose": "Translation, subtitle segmentation and dubbing workflow reference; no upstream code copied at initialization"
+  }
+}

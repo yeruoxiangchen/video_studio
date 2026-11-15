@@ -6,7 +6,11 @@ export default defineConfig({
   expect: { timeout: 2 * 60 * 1000 },
   fullyParallel: false,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never" }]],
+  outputDir: process.env.CAMCAT_E2E_OUTPUT_DIR ?? "/data/zjr/camcat_studio/checks/browser/results",
+  reporter: [["list"], ["html", {
+    open: "never",
+    outputFolder: process.env.CAMCAT_E2E_REPORT_DIR ?? "/data/zjr/camcat_studio/checks/browser/report",
+  }]],
   use: {
     baseURL: process.env.CAMCAT_E2E_BASE_URL ?? "http://localhost:5173",
     trace: "retain-on-failure",

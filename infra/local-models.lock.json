@@ -1,0 +1,33 @@
+{
+  "official_source": {
+    "repository": "https://github.com/QwenLM/Qwen3-VL-Embedding",
+    "revision": "393e2978d27852b0d0230d6994f37f9c15bed73c"
+  },
+  "embedding": {
+    "repository": "Qwen/Qwen3-VL-Embedding-8B",
+    "revision": "2c4565515e0f265c6511776e7193b22c0968ddc7",
+    "dimension": 2048,
+    "precision": "bfloat16"
+  },
+  "reranker": {
+    "repository": "Qwen/Qwen3-VL-Reranker-8B",
+    "revision": "b212dc8c91a8164aef1ea2de9c1a867611e75c04",
+    "precision": "bfloat16",
+    "runtime_precision": "nf4"
+  },
+  "visual": {
+    "repository": "Qwen/Qwen3-VL-8B-Instruct",
+    "physical_path": "/data/zjr/models/Qwen3-VL-8B-Instruct",
+    "precision": "nf4",
+    "read_only": true
+  },
+  "asr": {
+    "repository": "dropbox-dash/faster-whisper-large-v3-turbo",
+    "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+    "runtime": "faster-whisper==1.2.1",
+    "physical_path": "/data/zjr/camcat_studio/models/faster-whisper-large-v3-turbo",
+    "precision": "int8",
+    "device": "cpu",
+    "languages": "automatic multilingual detection"
+  }
+}

@@ -9,6 +9,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from camcat.config import Settings
+from camcat.services.presigned_cache import PresignedUrlCache
 
 
 class ObjectStore:
@@ -26,6 +27,7 @@ class ObjectStore:
             "s3", endpoint_url=settings.object_store_public_endpoint, **credentials
         )
         self.bucket = settings.object_store_bucket
+        self._signatures = PresignedUrlCache()
 
     def ensure_bucket(self) -> None:
         buckets = {item["Name"] for item in self._client.list_buckets().get("Buckets", [])}
@@ -99,26 +101,35 @@ class ObjectStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._client.download_file(self.bucket, key, str(path))
 
+    def size_bytes(self, key: str) -> int:
+        return int(self._client.head_object(Bucket=self.bucket, Key=key)["ContentLength"])
+
     def signed_url(self, key: str, expires_seconds: int = 3600) -> str:
-        return str(
-            self._public_client.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": self.bucket, "Key": key},
-                ExpiresIn=expires_seconds,
-            )
+        return self._signatures.get(
+            (key, expires_seconds, None),
+            lambda: str(
+                self._public_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.bucket, "Key": key},
+                    ExpiresIn=expires_seconds,
+                )
+            ),
         )
 
     def signed_download_url(self, key: str, filename: str, expires_seconds: int = 3600) -> str:
-        return str(
-            self._public_client.generate_presigned_url(
-                "get_object",
-                Params={
-                    "Bucket": self.bucket,
-                    "Key": key,
-                    "ResponseContentDisposition": f'attachment; filename="{filename}"',
-                },
-                ExpiresIn=expires_seconds,
-            )
+        return self._signatures.get(
+            (key, expires_seconds, filename),
+            lambda: str(
+                self._public_client.generate_presigned_url(
+                    "get_object",
+                    Params={
+                        "Bucket": self.bucket,
+                        "Key": key,
+                        "ResponseContentDisposition": f'attachment; filename="{filename}"',
+                    },
+                    ExpiresIn=expires_seconds,
+                )
+            ),
         )
 
     def healthcheck(self) -> None:

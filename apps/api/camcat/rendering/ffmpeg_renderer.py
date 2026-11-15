@@ -14,7 +14,7 @@ class FFmpegRenderError(RuntimeError):
 
 
 class FFmpegRenderer:
-    VERSION = "camcat-ffmpeg-renderer/v2"
+    VERSION = "camcat-ffmpeg-renderer/v2-localization-3"
 
     def render(
         self, build: RenderBuild, sources: MaterializedSources, output: Path
@@ -55,7 +55,9 @@ class FFmpegRenderer:
                 f"scale={timeline.canvas.width}:{timeline.canvas.height}:force_original_aspect_ratio=increase,"
                 f"crop={timeline.canvas.width}:{timeline.canvas.height},"
                 f"eq=contrast={profile.color_contrast:.10g}:saturation={profile.color_saturation:.10g}:gamma={profile.color_gamma:.10g},"
-                f"setsar=1,fps={fps},format=rgba"
+                f"setsar=1,fps={fps},"
+                f"tpad=stop_mode=clone:stop={segment.render_duration_frames},"
+                f"trim=end_frame={segment.render_duration_frames},format=rgba"
             )
             if transform.scale_x != 1 or transform.scale_y != 1:
                 chain += f",scale=iw*{transform.scale_x:.10g}:ih*{transform.scale_y:.10g}"
@@ -97,7 +99,7 @@ class FFmpegRenderer:
             if sources[segment.source_id].ref.audio_codec:
                 filters.append(
                     f"[{input_index}:a:0]atrim=start={visible_start:.6f}:duration={visible_duration:.6f},"
-                    f"asetpts=PTS-STARTPTS,{_atempo(segment.speed)},aresample={profile.audio_sample_rate},"
+                    f"asetpts=PTS-STARTPTS,{_atempo(segment.speed)},volume={segment.audio_volume:.10g},aresample={profile.audio_sample_rate},"
                     f"aformat=channel_layouts={audio_layout},apad,atrim=duration={target_duration:.6f}[pa{index}]"
                 )
             else:
@@ -139,7 +141,9 @@ class FFmpegRenderer:
                 label = f"ov{track_index}_{segment_index}"
                 chain = (
                     f"[{input_index}:v:0]trim=start={start:.6f}:duration={duration:.6f},"
-                    f"setpts=(PTS-STARTPTS)/{segment.speed:.10g},fps={fps},format=rgba,"
+                    f"setpts=(PTS-STARTPTS)/{segment.speed:.10g},fps={fps},"
+                    f"tpad=stop_mode=clone:stop={segment.timeline_duration_frames},"
+                    f"trim=end_frame={segment.timeline_duration_frames},format=rgba,"
                     f"scale=iw*{transform.scale_x:.10g}:ih*{transform.scale_y:.10g}"
                 )
                 if transform.rotation:
@@ -221,6 +225,10 @@ class FFmpegRenderer:
             f"[{current_video}]",
             "-map",
             f"[{current_audio}]",
+            "-r",
+            fps,
+            "-fps_mode",
+            "cfr",
             "-frames:v",
             str(timeline.frame_count),
             "-c:v",

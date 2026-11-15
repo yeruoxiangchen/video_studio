@@ -1,9 +1,32 @@
-name: camcat
+name: camcat-studio
+
+x-build-proxy-args: &build-proxy-args
+  HTTP_PROXY: ${CAMCAT_CONTAINER_HTTP_PROXY:-}
+  HTTPS_PROXY: ${CAMCAT_CONTAINER_HTTPS_PROXY:-}
+  NO_PROXY: ${CAMCAT_CONTAINER_NO_PROXY:-}
+  http_proxy: ${CAMCAT_CONTAINER_HTTP_PROXY:-}
+  https_proxy: ${CAMCAT_CONTAINER_HTTPS_PROXY:-}
+  no_proxy: ${CAMCAT_CONTAINER_NO_PROXY:-}
+
+x-runtime-environment: &runtime-environment
+  TMPDIR: /var/lib/camcat/tmp
+  TORCH_HOME: /var/lib/camcat/cache/torch
+  HF_HOME: /var/lib/camcat/cache/huggingface
+  HF_HUB_CACHE: /var/lib/camcat/cache/huggingface/hub
+  TORCH_EXTENSIONS_DIR: /var/lib/camcat/cache/torch_extensions
+  MPLCONFIGDIR: /var/lib/camcat/cache/matplotlib
+  XDG_CACHE_HOME: /var/lib/camcat/cache/xdg
+  OMP_NUM_THREADS: "2"
+  OPENBLAS_NUM_THREADS: "1"
 
 x-api-environment: &api-environment
+  <<: *runtime-environment
+  HTTP_PROXY: ${CAMCAT_CONTAINER_HTTP_PROXY:-}
+  HTTPS_PROXY: ${CAMCAT_CONTAINER_HTTPS_PROXY:-}
+  NO_PROXY: ${CAMCAT_CONTAINER_NO_PROXY:-localhost,127.0.0.1,api,postgres,minio,milvus,speech,10.0.0.0/8}
   CAMCAT_DATABASE_URL: ${CAMCAT_DATABASE_URL:-postgresql+psycopg://camcat:camcat@postgres:5432/camcat}
   CAMCAT_OBJECT_STORE_ENDPOINT: ${CAMCAT_OBJECT_STORE_ENDPOINT:-http://minio:9000}
-  CAMCAT_OBJECT_STORE_PUBLIC_ENDPOINT: ${CAMCAT_OBJECT_STORE_PUBLIC_ENDPOINT:-http://localhost:9000}
+  CAMCAT_OBJECT_STORE_PUBLIC_ENDPOINT: ${CAMCAT_OBJECT_STORE_PUBLIC_ENDPOINT:-http://localhost:18963}
   CAMCAT_OBJECT_STORE_ACCESS_KEY: ${CAMCAT_OBJECT_STORE_ACCESS_KEY:-camcat}
   CAMCAT_OBJECT_STORE_SECRET_KEY: ${CAMCAT_OBJECT_STORE_SECRET_KEY:?set CAMCAT_OBJECT_STORE_SECRET_KEY in .env}
   CAMCAT_OBJECT_STORE_BUCKET: ${CAMCAT_OBJECT_STORE_BUCKET:-camcat}
@@ -17,22 +40,44 @@ x-api-environment: &api-environment
   # The deterministic default is only suitable for the loopback-bound local-single-user stack.
   # Settings rejects it when CAMCAT_SECURITY_MODE=multi-user.
   CAMCAT_PROVIDER_GATEWAY_API_KEY: ${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}
-  CAMCAT_BAILIAN_API_HOST: ${CAMCAT_BAILIAN_API_HOST:?set the Bailian workspace API host in .env}
-  CAMCAT_BAILIAN_API_KEY: ${CAMCAT_BAILIAN_API_KEY:?set a rotated Bailian API key in .env}
+  CAMCAT_BAILIAN_API_HOST: ${CAMCAT_BAILIAN_API_HOST:-}
+  CAMCAT_BAILIAN_API_KEY: ${CAMCAT_BAILIAN_API_KEY:-}
   CAMCAT_EMBEDDING_BASE_URL: ${CAMCAT_EMBEDDING_BASE_URL:-http://provider-gateway:8010}
-  CAMCAT_EMBEDDING_API_KEY: ${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}
+  CAMCAT_EMBEDDING_API_KEY: ${CAMCAT_EMBEDDING_API_KEY:-${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}}
   CAMCAT_EMBEDDING_MODEL: ${CAMCAT_EMBEDDING_MODEL:-Qwen/Qwen3-VL-Embedding-8B}
   CAMCAT_EMBEDDING_DIMENSION: 2048
   CAMCAT_RERANKER_BASE_URL: ${CAMCAT_RERANKER_BASE_URL:-http://provider-gateway:8010}
-  CAMCAT_RERANKER_API_KEY: ${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}
+  CAMCAT_RERANKER_API_KEY: ${CAMCAT_RERANKER_API_KEY:-${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}}
   CAMCAT_RERANKER_MODEL: ${CAMCAT_RERANKER_MODEL:-Qwen/Qwen3-VL-Reranker-8B}
   CAMCAT_LLM_BASE_URL: ${CAMCAT_LLM_BASE_URL:-http://provider-gateway:8010}
-  CAMCAT_LLM_API_KEY: ${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}
+  CAMCAT_LLM_API_KEY: ${CAMCAT_LLM_API_KEY:-${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}}
   CAMCAT_LLM_MODEL: ${CAMCAT_LLM_MODEL:-qwen3-vl-plus}
+  CAMCAT_LLM_JSON_SCHEMA_ENABLED: ${CAMCAT_LLM_JSON_SCHEMA_ENABLED:-false}
+  CAMCAT_SOURCE_EVIDENCE_ENABLED: ${CAMCAT_SOURCE_EVIDENCE_ENABLED:-true}
+  CAMCAT_VISUAL_ANALYSIS_BASE_URL: ${CAMCAT_VISUAL_ANALYSIS_BASE_URL:-}
+  CAMCAT_VISUAL_ANALYSIS_API_KEY: ${CAMCAT_VISUAL_ANALYSIS_API_KEY:-}
+  CAMCAT_VISUAL_ANALYSIS_MODEL: ${CAMCAT_VISUAL_ANALYSIS_MODEL:-}
+  CAMCAT_NARRATIVE_BASE_URL: ${CAMCAT_NARRATIVE_BASE_URL:-}
+  CAMCAT_NARRATIVE_API_KEY: ${CAMCAT_NARRATIVE_API_KEY:-}
+  CAMCAT_NARRATIVE_MODEL: ${CAMCAT_NARRATIVE_MODEL:-}
   CAMCAT_ASR_BASE_URL: ${CAMCAT_ASR_BASE_URL:-http://provider-gateway:8010}
-  CAMCAT_ASR_API_KEY: ${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}
+  CAMCAT_ASR_API_KEY: ${CAMCAT_ASR_API_KEY:-${CAMCAT_PROVIDER_GATEWAY_API_KEY:-camcat-local-gateway}}
   CAMCAT_ASR_MODEL: ${CAMCAT_ASR_MODEL:-qwen3-asr-flash}
-  CAMCAT_RUNTIME_DIR: /var/lib/camcat
+  CAMCAT_PROVIDER_TIMEOUT_SECONDS: ${CAMCAT_PROVIDER_TIMEOUT_SECONDS:-120}
+  CAMCAT_TRANSLATION_BASE_URL: ${CAMCAT_TRANSLATION_BASE_URL:-}
+  CAMCAT_TRANSLATION_API_KEY: ${CAMCAT_TRANSLATION_API_KEY:-}
+  CAMCAT_TRANSLATION_MODEL: ${CAMCAT_TRANSLATION_MODEL:-}
+  CAMCAT_TRANSLATION_BACKEND: ${CAMCAT_TRANSLATION_BACKEND:-chat}
+  CAMCAT_DELIVERY_MAX_BYTES: ${CAMCAT_DELIVERY_MAX_BYTES:-536870912}
+  CAMCAT_TTS_BASE_URL: ${CAMCAT_TTS_BASE_URL:-http://speech:18961}
+  CAMCAT_TTS_API_KEY: ${CAMCAT_TTS_API_KEY:-}
+  CAMCAT_TTS_MODEL: ${CAMCAT_TTS_MODEL:-piper}
+  CAMCAT_TTS_VOICE: ${CAMCAT_TTS_VOICE:-en_US-lessac-medium}
+  CAMCAT_TTS_REVISION: ${CAMCAT_TTS_REVISION:-b145f2ac26522d6a2ccde0164b7b0e48b1e3199c}
+  CAMCAT_TTS_LANGUAGES: '["en"]'
+  CAMCAT_CORS_ORIGINS: '["http://localhost:18962","http://127.0.0.1:18962"]'
+  CAMCAT_PUBLIC_API_URL: ${CAMCAT_PUBLIC_API_URL:-http://127.0.0.1:18960}
+  CAMCAT_RUNTIME_DIR: ${CAMCAT_SHARED_RUNTIME:-/var/lib/camcat}
 
 services:
   postgres:
@@ -41,6 +86,8 @@ services:
       POSTGRES_DB: camcat
       POSTGRES_USER: camcat
       POSTGRES_PASSWORD: camcat
+    ports:
+      - "127.0.0.1:${CAMCAT_PG_PORT:-18970}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -66,14 +113,18 @@ services:
       retries: 20
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: camcat-studio-minio:RELEASE.2025-04-22T22-12-26Z
+    build:
+      context: .
+      dockerfile: infra/minio/Dockerfile
+      args: *build-proxy-args
     command: minio server /data --console-address :9001
     environment:
       MINIO_ROOT_USER: ${CAMCAT_OBJECT_STORE_ACCESS_KEY:-camcat}
       MINIO_ROOT_PASSWORD: ${CAMCAT_OBJECT_STORE_SECRET_KEY:?set CAMCAT_OBJECT_STORE_SECRET_KEY in .env}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:${CAMCAT_S3_PORT:-18963}:9000"
+      - "127.0.0.1:${CAMCAT_S3_CONSOLE_PORT:-18964}:9001"
     volumes:
       - minio-data:/data
     healthcheck:
@@ -93,8 +144,8 @@ services:
       MINIO_ACCESS_KEY_ID: ${CAMCAT_OBJECT_STORE_ACCESS_KEY:-camcat}
       MINIO_SECRET_ACCESS_KEY: ${CAMCAT_OBJECT_STORE_SECRET_KEY:?set CAMCAT_OBJECT_STORE_SECRET_KEY in .env}
     ports:
-      - "19530:19530"
-      - "9091:9091"
+      - "127.0.0.1:${CAMCAT_MILVUS_PORT:-18965}:19530"
+      - "127.0.0.1:${CAMCAT_MILVUS_HEALTH_PORT:-18966}:9091"
     volumes:
       - milvus-data:/var/lib/milvus
     depends_on:
@@ -109,13 +160,18 @@ services:
       retries: 30
 
   provider-gateway:
+    profiles: ["hosted"]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      args: *build-proxy-args
     command: ["uvicorn", "camcat.gateway.main:app", "--host", "0.0.0.0", "--port", "8010"]
     environment: *api-environment
+    volumes:
+      - runtime-data:/var/lib/camcat
+      - runtime-data:${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime
     ports:
-      - "127.0.0.1:8010:8010"
+      - "127.0.0.1:${CAMCAT_GATEWAY_PORT:-18967}:8010"
     depends_on:
       minio:
         condition: service_healthy
@@ -129,8 +185,12 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      args: *build-proxy-args
     command: ["alembic", "upgrade", "head"]
     environment: *api-environment
+    volumes:
+      - runtime-data:/var/lib/camcat
+      - runtime-data:${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime
     depends_on:
       postgres:
         condition: service_healthy
@@ -140,17 +200,17 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      args: *build-proxy-args
     environment: *api-environment
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${CAMCAT_API_PORT:-18960}:8000"
     volumes:
       - runtime-data:/var/lib/camcat
+      - runtime-data:${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime
     depends_on:
       migrate:
         condition: service_completed_successfully
       milvus:
-        condition: service_healthy
-      provider-gateway:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
@@ -158,23 +218,67 @@ services:
       timeout: 5s
       retries: 20
 
-  worker:
+  worker: &worker-service
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      args: *build-proxy-args
     command: ["python", "-m", "camcat.worker"]
     environment:
       <<: *api-environment
-      CAMCAT_WORKER_ID: compose-worker-1
+      CAMCAT_WORKER_ID: compose-analysis-1
+      CAMCAT_WORKER_ROLE: analysis
     volumes:
       - runtime-data:/var/lib/camcat
+      - runtime-data:${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime
     depends_on:
       migrate:
         condition: service_completed_successfully
       milvus:
         condition: service_healthy
-      provider-gateway:
-        condition: service_healthy
+
+  localization-worker:
+    <<: *worker-service
+    environment:
+      <<: *api-environment
+      CAMCAT_WORKER_ID: compose-localization-1
+      CAMCAT_WORKER_ROLE: localization
+
+  render-worker:
+    <<: *worker-service
+    environment:
+      <<: *api-environment
+      CAMCAT_WORKER_ID: compose-render-1
+      CAMCAT_WORKER_ROLE: render
+
+  speech:
+    profiles: ["local-speech"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args:
+        <<: *build-proxy-args
+        CAMCAT_INSTALL_TTS: "true"
+    command: ["python", "services/piper_entrypoint.py"]
+    environment:
+      <<: *runtime-environment
+      CAMCAT_SPEECH_MODEL_PATH: /models/en_US-lessac-medium.onnx
+      CAMCAT_SPEECH_API_KEY: ${CAMCAT_TTS_API_KEY:-}
+      CAMCAT_SPEECH_REVISION: ${CAMCAT_TTS_REVISION:-b145f2ac26522d6a2ccde0164b7b0e48b1e3199c}
+      OMP_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "2"
+    volumes:
+      - ${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/models/piper:/models:ro
+      - runtime-data:/var/lib/camcat
+      - runtime-data:${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime
+    mem_limit: 1g
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18961/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   integration-test:
     profiles: ["test"]
@@ -182,6 +286,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       args:
+        <<: *build-proxy-args
         CAMCAT_INSTALL_DEV: "true"
     command: ["pytest", "-q", "-m", "integration and not external", "tests/integration"]
     environment:
@@ -189,6 +294,7 @@ services:
       CAMCAT_ENVIRONMENT: test
     volumes:
       - runtime-data:/var/lib/camcat
+      - runtime-data:${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -200,17 +306,38 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
+        <<: *build-proxy-args
         VITE_CAMCAT_API_BASE: ${VITE_CAMCAT_API_BASE-}
         VITE_CAMCAT_USER_ID: ${VITE_CAMCAT_USER_ID:-camcat-local-user}
     ports:
-      - "5173:80"
+      - "127.0.0.1:${CAMCAT_WEB_PORT:-18962}:80"
     depends_on:
       api:
         condition: service_healthy
 
 volumes:
   postgres-data:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/containers/postgres
   etcd-data:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/containers/etcd
   minio-data:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/containers/minio
   milvus-data:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/containers/milvus
   runtime-data:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CAMCAT_STUDIO_DATA:-/data/zjr/camcat_studio}/runtime

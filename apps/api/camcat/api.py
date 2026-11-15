@@ -10,22 +10,31 @@ from typing import Annotated, Any, cast
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import httpx
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from camcat.agent.errors import AgentInputError
 from camcat.agent.graph import CamCatGraph, CamCatState
 from camcat.agent.scope import editing_retrieval_filters
 from camcat.agent.streaming import background_stream
+from camcat.agent.trace import failure_node_trace
 from camcat.config import Settings, get_settings
 from camcat.database import SessionLocal, get_db
 from camcat.domain.commands import EditCommandBatch
 from camcat.domain.project import EditingProjectV2
+from camcat.domain.reducer import CommandConflict
 from camcat.domain.state_patch import PatchConflict
 from camcat.editing.policies import expiry_for_upload
+from camcat.localization.agent import AgentDispatchResponse, dubbing_request, resolve_action
+from camcat.localization.api import create_localization_router
+from camcat.localization.operations import current_localization, enqueue_localization
+from camcat.localization.plans import validate_dubbed_state
+from camcat.localization.schemas import TranslateRequest
+from camcat.localization.source_draft import source_draft_commands
 from camcat.media.ffmpeg import MediaCommandError, probe
 from camcat.models import (
     Asset,
@@ -42,6 +51,7 @@ from camcat.models import (
     StateVersion,
     utcnow,
 )
+from camcat.rendering.policy import render_profile_for_project
 from camcat.repositories import JobRepository, StateRepository, sanitize_job_error
 from camcat.retrieval.milvus_store import MilvusSegmentStore
 from camcat.retrieval.service import RetrievalService
@@ -70,8 +80,11 @@ from camcat.schemas import (
     VideoResponse,
 )
 from camcat.security import AuthenticationError, authorize_library_import, resolve_owner
+from camcat.services.narrative import NativeNarrativePlanner
 from camcat.services.object_store import ObjectStore
 from camcat.services.providers import (
+    ProviderError,
+    ProviderOutputError,
     QwenAsrClient,
     QwenChatClient,
     QwenEmbeddingClient,
@@ -98,7 +111,12 @@ class Services:
             reranker=self.reranker,
             media_signer=self.object_store,
         )
-        self.graph = CamCatGraph(llm=self.llm, retrieval=self.retrieval)
+        self.narrative = (
+            NativeNarrativePlanner(settings, object_store=self.object_store)
+            if settings.narrative_base_url
+            else None
+        )
+        self.graph = CamCatGraph(llm=self.llm, retrieval=self.retrieval, narrative=self.narrative)
 
 
 settings = get_settings()
@@ -114,13 +132,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="CamCat API",
+    title="剪辑工作台 API",
     version="0.1.0",
     description="Multimodal intelligent video editing harness",
     lifespan=lifespan,
     responses={
         status: {"model": ErrorEnvelope, "description": "CamCat error envelope"}
-        for status in (400, 401, 403, 404, 409, 410, 413, 415, 422, 500, 502)
+        for status in (400, 401, 403, 404, 409, 410, 413, 415, 422, 500, 502, 503, 504)
     },
 )
 app.add_middleware(
@@ -200,6 +218,28 @@ async def internal_error_handler(request: Request, _exc: Exception) -> JSONRespo
     )
 
 
+@app.exception_handler(ProviderError)
+async def provider_error_handler(request: Request, exc: ProviderError) -> JSONResponse:
+    if exc.error_code == "context_budget_exceeded":
+        status, message = 422, "当前工程上下文超出模型输入上限，请减少一次提交的素材或编辑范围。"
+    elif isinstance(exc, ProviderOutputError):
+        status, message = 502, "模型输出未满足编辑协议，本次编辑未保存。"
+    elif exc.status_code in {401, 403}:
+        status, message = 502, "本地模型服务鉴权配置无效，请检查服务配置。"
+    elif exc.status_code == 408:
+        status, message = 504, "模型生成超时，本次编辑未保存。"
+    else:
+        status, message = 503, "模型服务暂时不可用，本次编辑未保存。"
+    return _error(request, status=status, code=exc.error_code, message=message, details=exc.details)
+
+
+@app.exception_handler(AgentInputError)
+async def agent_input_error_handler(request: Request, exc: AgentInputError) -> JSONResponse:
+    return _error(
+        request, status=422, code=exc.error_code, message=exc.public_message, details=exc.details
+    )
+
+
 @app.get("/health/live")
 def live() -> dict[str, str]:
     return {"status": "ok"}
@@ -214,6 +254,8 @@ def ready(db: Session = Depends(get_db)) -> dict[str, str]:
     services.reranker.healthcheck()
     services.llm.healthcheck()
     services.asr.healthcheck()
+    if services.narrative is not None:
+        services.narrative.healthcheck()
     return {"status": "ready"}
 
 
@@ -239,6 +281,7 @@ def authenticated_owner(
 
 
 Owner = Annotated[str, Depends(authenticated_owner)]
+DEFAULT_SESSION_PAGE_SIZE = 50
 
 
 def _require_library_admin(supplied_key: str | None) -> None:
@@ -265,13 +308,24 @@ def create_project(request: CreateProjectRequest, db: Db, owner_id: Owner) -> Pr
 
 @app.get("/api/v1/projects", response_model=PageResponse)
 def list_projects(
-    db: Db, owner_id: Owner, limit: int = 50, cursor: UUID | None = None
+    db: Db,
+    owner_id: Owner,
+    limit: int = 50,
+    cursor: UUID | None = None,
+    include_sessions: Annotated[
+        bool, Query(description="Include each project's first page of editing sessions")
+    ] = False,
 ) -> PageResponse:
     query = select(Project).where(Project.owner_id == owner_id)
     if cursor:
         query = query.where(Project.id > cursor)
     projects = db.scalars(query.order_by(Project.id).limit(min(100, max(1, limit)) + 1)).all()
     page, next_cursor = _slice_page(projects, limit)
+    sessions = (
+        _project_sessions(db, owner_id, [project.id for project in page])
+        if include_sessions and page
+        else {}
+    )
     return PageResponse(
         items=[
             ProjectResponse(
@@ -280,6 +334,7 @@ def list_projects(
                 created_at=item.created_at,
                 updated_at=item.updated_at,
             ).model_dump(mode="json")
+            | ({"sessions": sessions.get(item.id, [])} if include_sessions else {})
             for item in page
         ],
         next_cursor=next_cursor,
@@ -460,6 +515,7 @@ def import_open_media(
                 str(request.download_url),
                 temporary,
                 maximum_bytes=settings.upload_max_bytes,
+                accepted_content_prefixes=("video/", "application/octet-stream"),
             )
         except UnsafeRemoteMediaUrl as exc:
             raise HTTPException(422, str(exc)) from exc
@@ -564,10 +620,19 @@ def _job_response(job: Job) -> JobResponse:
     if result and result.get("output_key"):
         result["output_url"] = services.object_store.signed_url(str(result["output_key"]))
         result["download_url"] = services.object_store.signed_download_url(
-            str(result["output_key"]), f"camcat-{job.id}.mp4"
+            str(result["output_key"]), f"video-{job.id}.mp4"
         )
     if result and result.get("subtitle_key"):
         result["subtitle_url"] = services.object_store.signed_url(str(result["subtitle_key"]))
+        if job.kind in {JobKind.TRANSLATE_SUBTITLES, JobKind.DUB_SUBTITLES}:
+            result["subtitle_download_url"] = services.object_store.signed_download_url(
+                str(result["subtitle_key"]), f"subtitles-{job.id}.srt"
+            )
+    if result and isinstance(result.get("audio"), list):
+        result["audio"] = [
+            {**item, "audio_url": services.object_store.signed_url(str(item["storage_key"]))}
+            for item in result["audio"]
+        ]
     if result and result.get("source_media"):
         result["source_media"] = [
             {
@@ -625,6 +690,46 @@ def _editing_session_response(
     )
 
 
+def _project_sessions(
+    db: Session, owner_id: str, project_ids: list[UUID]
+) -> dict[UUID, list[dict[str, Any]]]:
+    ranked = (
+        select(
+            EditingSession.id,
+            func.row_number()
+            .over(partition_by=EditingSession.project_id, order_by=EditingSession.id)
+            .label("position"),
+        )
+        .where(
+            EditingSession.owner_id == owner_id,
+            EditingSession.project_id.in_(project_ids),
+            EditingSession.deleted_at.is_(None),
+        )
+        .subquery()
+    )
+    query = (
+        select(EditingSession, StateVersion)
+        .select_from(EditingSession)
+        .join(ranked, ranked.c.id == EditingSession.id)
+        .join(
+            StateVersion,
+            (StateVersion.session_id == EditingSession.id)
+            & (StateVersion.version == EditingSession.current_version),
+        )
+        .where(ranked.c.position <= DEFAULT_SESSION_PAGE_SIZE)
+        .order_by(EditingSession.id)
+    )
+    sessions: dict[UUID, list[dict[str, Any]]] = {}
+    for session, state in db.execute(query):
+        assert session.project_id is not None
+        sessions.setdefault(session.project_id, []).append(
+            _editing_session_response(
+                session, version=state.version, document=state.document
+            ).model_dump(mode="json")
+        )
+    return sessions
+
+
 @app.post("/api/v1/search/agentic", response_model=AgenticSearchResponse)
 def agentic_search(request: SearchRequest, db: Db, owner_id: Owner) -> AgenticSearchResponse:
     run = GraphRun(
@@ -653,6 +758,7 @@ def agentic_search(request: SearchRequest, db: Db, owner_id: Owner) -> AgenticSe
         db.commit()
         return _search_response(run, result, db)
     except Exception as exc:
+        run.node_trace = failure_node_trace(exc) or run.node_trace
         run.status = JobStatus.FAILED
         run.error = sanitize_job_error(exc)
         run.finished_at = utcnow()
@@ -789,7 +895,7 @@ def create_editing_session(
 def list_editing_sessions(
     db: Db,
     owner_id: Owner,
-    limit: int = 50,
+    limit: int = DEFAULT_SESSION_PAGE_SIZE,
     cursor: UUID | None = None,
     project_id: UUID | None = None,
 ) -> PageResponse:
@@ -842,6 +948,8 @@ def delete_editing_session(session_id: UUID, db: Db, owner_id: Owner) -> Respons
         )
     )
     db.commit()
+    services.object_store.delete_prefix(f"temporary/localization/{session_id}/")
+    services.object_store.delete_prefix(f"generated/localization/{session_id}/")
     return Response(status_code=204)
 
 
@@ -929,14 +1037,18 @@ def list_audit_events(
 def apply_edit_commands(
     session_id: UUID, request: EditCommandBatch, db: Db, owner_id: Owner
 ) -> EditCommandBatchResponse:
-    state, audit = StateRepository(db).apply_commands(
-        session_id=session_id,
-        owner_id=owner_id,
-        base_version=request.base_version,
-        commands=request.commands,
-        actor=owner_id,
-        reason=request.reason,
-    )
+    try:
+        state, audit = StateRepository(db).apply_commands(
+            session_id=session_id,
+            owner_id=owner_id,
+            base_version=request.base_version,
+            commands=request.commands,
+            actor=owner_id,
+            reason=request.reason,
+        )
+    except CommandConflict as error:
+        db.rollback()
+        raise HTTPException(422, str(error)) from error
     session = db.get(EditingSession, session_id)
     assert session is not None
     return EditCommandBatchResponse(
@@ -967,6 +1079,72 @@ def rollback_editing_session(
     session = db.get(EditingSession, session_id)
     assert session is not None
     return _editing_session_response(session, version=state.version, document=state.document)
+
+
+@app.post("/api/v1/editing/sessions/{session_id}/agent/dispatch")
+def dispatch_editing_agent(
+    session_id: UUID, request: AgentEditRequest, db: Db, owner_id: Owner
+) -> AgentDispatchResponse:
+    session, version, project = current_localization(session_id, db, owner_id)
+    if request.base_version != version.version:
+        raise PatchConflict(expected_version=request.base_version, current_version=version.version)
+    action = resolve_action(request.instruction, project, services.llm)
+    if action.action in {"edit", "clarify"}:
+        return AgentDispatchResponse(
+            action=action.action,
+            message=action.message,
+            session=_editing_session_response(
+                session, version=version.version, document=version.document
+            ),
+        )
+    if action.action in {"dub", "translate_and_dub"} and (
+        not settings.tts_base_url
+        or not settings.tts_api_key.get_secret_value()
+        or not settings.tts_model
+        or not settings.tts_voice
+        or action.target_language not in settings.tts_languages
+    ):
+        raise HTTPException(
+            422, "当前配音服务仅支持 " + "、".join(settings.tts_languages) + "，可先单独翻译字幕"
+        )
+    # The model never emits domain commands or a human review approval.
+    commands = source_draft_commands(project)
+    if commands:
+        version, _ = StateRepository(db).apply_commands(
+            session_id=session_id,
+            owner_id=owner_id,
+            base_version=request.base_version,
+            commands=commands,
+            actor=owner_id,
+            reason="载入原片与识别字幕，用于 Agent 译制",
+        )
+        project = EditingProjectV2.model_validate(version.document)
+    metadata = project.metadata.get("localization", {})
+    glossary = {
+        **(metadata.get("glossary", {}) if isinstance(metadata, dict) else {}),
+        **action.glossary,
+    }
+    tool_request = (
+        dubbing_request(action, version=version.version)
+        if action.action == "dub"
+        else TranslateRequest(
+            base_version=version.version,
+            target_language=action.target_language,
+            source_track_id=action.source_track_id,
+            glossary=glossary,
+        )
+    )
+    job = enqueue_localization(
+        session_id, tool_request, db, owner_id, settings, automation=action.model_dump(mode="json")
+    )
+    return AgentDispatchResponse(
+        action=action.action,
+        message="已提交译制任务，将写入草稿版本；完成后请在译制面板试听、审校。",
+        session=_editing_session_response(
+            session, version=version.version, document=version.document
+        ),
+        job=_job_response(job),
+    )
 
 
 @app.post("/api/v1/editing/sessions/{session_id}/agent", response_model=EditingSessionResponse)
@@ -1019,6 +1197,7 @@ def run_editing_agent(
         db.rollback()
         failed_run = db.get(GraphRun, run.id)
         if failed_run is not None:
+            failed_run.node_trace = failure_node_trace(exc) or failed_run.node_trace
             failed_run.status = JobStatus.FAILED
             failed_run.error = sanitize_job_error(exc)
             failed_run.finished_at = utcnow()
@@ -1117,13 +1296,22 @@ def stream_editing_agent(
         except Exception as exc:
             db.rollback()
             failed = db.get(GraphRun, run.id)
-            public_error = sanitize_job_error(exc)
+            public_error = getattr(exc, "public_message", None) or sanitize_job_error(exc)
             if failed is not None:
+                failed.node_trace = failure_node_trace(exc) or failed.node_trace
                 failed.status = JobStatus.FAILED
                 failed.error = public_error
                 failed.finished_at = utcnow()
                 db.commit()
-            yield _sse("failed", {"graph_run_id": str(run.id), "message": public_error})
+            yield _sse(
+                "failed",
+                {
+                    "graph_run_id": str(run.id),
+                    "message": public_error,
+                    "code": getattr(exc, "error_code", "agent_failed"),
+                    "details": getattr(exc, "details", {}),
+                },
+            )
 
     def produce() -> Any:
         with SessionLocal() as worker_db:
@@ -1154,16 +1342,18 @@ def render_editing_session(
     _, current = StateRepository(db).current(session_id, owner_id=owner_id)
     if current.version != request.base_version:
         raise PatchConflict(expected_version=request.base_version, current_version=current.version)
+    try:
+        validate_dubbed_state(EditingProjectV2.model_validate(current.document))
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
     if not any(
         track.get("type") == "video" and track.get("segments")
         for track in current.document["timeline"]["tracks"]
     ):
         raise HTTPException(422, "剪辑计划没有片段，无法渲染")
-    execution_quality = {
-        "preview": {"crf": 28, "preset": "ultrafast"},
-        "standard": {"crf": 20, "preset": "veryfast"},
-        "high": {"crf": 16, "preset": "medium"},
-    }[request.quality_profile]
+    render_profile = render_profile_for_project(
+        EditingProjectV2.model_validate(current.document), request.quality_profile
+    )
     job = JobRepository(db).enqueue(
         owner_id=owner_id,
         kind=JobKind.RENDER,
@@ -1172,22 +1362,7 @@ def render_editing_session(
             "version": current.version,
             "renderer": request.renderer,
             "quality_profile": request.quality_profile,
-            "render_profile": {
-                "video_codec": "libx264",
-                "audio_codec": "aac",
-                "audio_sample_rate": 48000,
-                "audio_channels": 2,
-                "pixel_format": "yuv420p",
-                **execution_quality,
-                "burn_subtitles": True,
-                "color_contrast": 1.035,
-                "color_saturation": 1.06,
-                "color_gamma": 1.01,
-                "normalize_loudness": True,
-                "loudness_target_lufs": -14,
-                "loudness_true_peak_db": -1.5,
-                "loudness_range_lu": 11,
-            },
+            "render_profile": render_profile.model_dump(mode="json", by_alias=True),
         },
     )
     return JobResponse(
@@ -1400,3 +1575,14 @@ def _graph_run_response(run: GraphRun) -> GraphRunResponse:
         created_at=run.created_at,
         finished_at=run.finished_at,
     )
+
+
+app.include_router(
+    create_localization_router(
+        settings,
+        authenticated_owner,
+        _job_response,
+        _editing_session_response,
+        services.object_store,
+    )
+)

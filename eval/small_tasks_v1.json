@@ -1,0 +1,22 @@
+{
+  "version": "camcat-small-business-v1",
+  "kind": "authored_business_regression_not_public_benchmark",
+  "runs_per_case": 1,
+  "source": "Existing licensed NASA-derived 12-second silent clip; freshly uploaded and analyzed",
+  "tolerance": "One output frame for time ranges; exact source continuity and preserved fields",
+  "cases": [
+    {"id": "crop", "group": "agent", "name": "按原片绝对时间裁剪", "canvas": [1280, 720], "captions": false,
+     "instructions": ["将主视频裁剪为原片第2秒至第4秒这一段，输出总时长2秒，其他设置保持不变。"]},
+    {"id": "subtitle", "group": "agent", "name": "只改字幕并保留画幅", "canvas": [720, 1280], "captions": true,
+     "instructions": ["只把现有字幕内容改成“欢迎使用 CamCat。”，字幕的时间位置、样式以及视频画幅和其他内容保持不变。"]},
+    {"id": "split", "group": "agent", "name": "含原片偏移的中点拆分", "canvas": [1280, 720], "captions": false,
+     "instructions": ["把当前四秒视频片段从时间中点一分为二，得到两个连续片段，各两秒；原片素材、四秒总时长、画幅和原声设置保持不变。"]},
+    {"id": "multi_turn", "group": "agent", "name": "两轮修改保留旧要求", "canvas": [1280, 720], "captions": true,
+     "instructions": ["将画幅改为9:16，并将现有字幕改为“一起看地球。”，保持视频的原片范围和四秒总时长。", "把当前视频片段从中点拆成两个连续片段，各两秒；保留上一轮的画幅和字幕内容、样式、位置，保持原片来源和四秒总时长。"]},
+    {"id": "localization", "group": "workflow", "name": "两句中英翻译与配音", "source_texts": ["欢迎使用 CamCat。", "用三个步骤分享地球的故事。"],
+     "human_reference_translations": ["Welcome to CamCat.", "Share Earth's story in three steps."],
+     "translation_checks": "Cue IDs, brand, welcome, number three, Earth, story; lexical checks only, not a full semantic or naturalness score"},
+    {"id": "stale_audio", "group": "guard", "name": "修改字幕后阻止过期音轨导出",
+     "requires": "localization", "expected_http_status": 422, "expected_message_contains": "重新配音"}
+  ]
+}

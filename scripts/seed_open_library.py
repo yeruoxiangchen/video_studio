@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from camcat.config import get_settings
+from camcat.rendering.fingerprint import probe_json
 from camcat.services.object_store import ObjectStore
 from camcat.services.remote_media import download_remote_media
 
@@ -77,6 +78,7 @@ def seed_audio(manifest_path: Path) -> list[dict[str, Any]]:
     store = ObjectStore(settings)
     store.ensure_bucket()
     catalog = cast(list[dict[str, Any]], json.loads(manifest_path.read_text(encoding="utf-8")))
+    verified_catalog = []
     with tempfile.TemporaryDirectory(prefix="camcat-audio-") as directory:
         for item in catalog:
             target = Path(directory) / f"{item['id']}.mp3"
@@ -86,9 +88,19 @@ def seed_audio(manifest_path: Path) -> list[dict[str, Any]]:
                 maximum_bytes=25 * 1024 * 1024,
                 accepted_content_prefixes=("audio/", "application/octet-stream"),
             )
+            metadata = probe_json(target)
+            if not any(
+                stream.get("codec_type") == "audio" for stream in metadata.get("streams", [])
+            ):
+                raise ValueError("Licensed audio has no verified audio stream")
+            duration_us = round(float(metadata.get("format", {}).get("duration") or 0) * 1_000_000)
+            if duration_us <= 0:
+                raise ValueError("Licensed audio has no usable measured duration")
             store.upload_file(target, item["storage_key"], media.content_type)
+            verified_catalog.append({**item, "duration_us": duration_us})
     public_catalog = [
-        {key: value for key, value in item.items() if key != "download_url"} for item in catalog
+        {key: value for key, value in item.items() if key != "download_url"}
+        for item in verified_catalog
     ]
     store.write_json("library/audio/catalog.json", public_catalog)
     return public_catalog
@@ -119,7 +131,7 @@ def main() -> int:
         )
     audio = seed_audio(args.audio_manifest)
     print(json.dumps({"audio_seeded": len(audio)}, ensure_ascii=False))
-    if not key:
+    if not key and videos:
         print(
             "PIXABAY_API_KEY is absent; imported the real sample published in Pixabay API docs.",
             file=sys.stderr,

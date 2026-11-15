@@ -32,9 +32,9 @@ class Canvas(StrictModel):
 
 class MediaSourceRef(StrictModel):
     source_id: str = Field(min_length=1)
-    origin: Literal["user_upload", "licensed_library"]
+    origin: Literal["user_upload", "licensed_library", "generated_audio"]
     storage_key: str = Field(min_length=1)
-    retention_class: Literal["transient_4h", "library"]
+    retention_class: Literal["transient_4h", "library", "generated"]
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -73,6 +73,7 @@ class VideoSegment(StrictModel):
     source_start_us: int = Field(ge=0)
     source_duration_us: int = Field(gt=0)
     speed: float = Field(default=1.0, ge=0.1, le=8.0)
+    audio_volume: float = Field(default=1.0, ge=0, le=4)
     transform: Transform = Field(default_factory=Transform)
     reason: str = ""
     evidence: list[EvidenceRef] = Field(default_factory=list)

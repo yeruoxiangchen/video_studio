@@ -15,6 +15,13 @@ export type AddTrack = {
   "after_track_id"?: string | null;
 };
 
+export type AgentDispatchResponse = {
+  "action": "edit" | "translate" | "dub" | "translate_and_dub" | "clarify";
+  "message": string;
+  "session": EditingSessionResponse;
+  "job"?: JobResponse | null;
+};
+
 export type AgentEditRequest = {
   "base_version": number;
   "instruction": string;
@@ -29,6 +36,10 @@ export type AgenticSearchResponse = {
   "route_sequence": Array<string>;
   "node_trace": Array<Record<string, unknown>>;
   "ranked_segments": Array<RankedSegmentResponse>;
+};
+
+export type ApplyLocalizationRequest = {
+  "base_version": number;
 };
 
 export type AudioSegment = {
@@ -80,6 +91,11 @@ export type CommandAuditResponse = {
   "reason": string;
 };
 
+export type ConfirmLocalizationReview = {
+  "base_version": number;
+  "confirmed": true;
+};
+
 export type CreateEditingSessionRequest = {
   "project_id"?: string | null;
   "video_id"?: string | null;
@@ -91,10 +107,25 @@ export type CreateProjectRequest = {
   "name": string;
 };
 
+export type DeliveryStatus = {
+  "state": "needs_translation" | "needs_dubbing" | "needs_review" | "ready_to_render" | "rendering" | "ready" | "failed";
+  "blockers"?: Array<string>;
+  "reviewed_version"?: number | null;
+  "render_job"?: JobResponse | null;
+  "package_download_url"?: string | null;
+};
+
+export type DubRequest = {
+  "base_version": number;
+  "voice"?: string | null;
+  "allow_duration_rewrite"?: boolean;
+  "original_audio_volume"?: number;
+};
+
 export type EditCommandBatch = {
   "base_version": number;
   "reason": string;
-  "commands": Array<InitializeEditingProject | RegisterSource | UpdateCanvas | AddTrack | RemoveTrack | RenameTrack | InsertSegment | RemoveSegment | MoveSegment | TrimSegment | SplitSegment | ReplaceSegmentMedia | SetSegmentTransform | UpdateTextSegment | AddAudioSegment | UpdateAudioSegment | RemoveAudioSegment | SetTransition | RemoveTransition | UpdateTitle | UpdateGoal>;
+  "commands": Array<InitializeEditingProject | RegisterSource | UpdateCanvas | AddTrack | RemoveTrack | RenameTrack | InsertSegment | RemoveSegment | MoveSegment | TrimSegment | SplitSegment | ReplaceSegmentMedia | SetSegmentTransform | UpdateTextSegment | AddAudioSegment | UpdateAudioSegment | RemoveAudioSegment | SetTransition | RemoveTransition | UpdateTitle | UpdateGoal | SetVideoAudioVolume | SetLocalizationMetadata | SetRenderPolicy>;
 };
 
 export type EditCommandBatchResponse = {
@@ -190,11 +221,58 @@ export type JobResponse = {
   "checkpoint"?: Record<string, unknown>;
 };
 
+export type LocalizationContext = {
+  "base_version": number;
+  "source_track_id": string | null;
+  "target_track_id": string | null;
+  "language": string | null;
+  "tracks": Array<SubtitleTrackInfo>;
+  "cues": Array<LocalizationCue>;
+  "jobs": Array<JobResponse>;
+  "tts_configured": boolean;
+  "tts_voice": string | null;
+  "tts_languages": Array<string>;
+  "audio_outdated"?: boolean;
+  "translation_outdated"?: boolean;
+  "source_cues"?: Array<LocalizationCue>;
+  "glossary"?: Record<string, unknown>;
+  "review_hints"?: Array<SourceReviewHint>;
+  "delivery"?: DeliveryStatus | null;
+  "expires_at"?: string | null;
+};
+
+export type LocalizationCue = {
+  "cue_id": string;
+  "start_us": number;
+  "duration_us": number;
+  "source_text": string;
+  "text": string;
+};
+
+export type LocalizationMetadata = {
+  "language": string;
+  "source_track_id": string;
+  "target_track_id"?: string;
+  "source_version"?: number;
+  "source_text_by_id"?: Record<string, unknown>;
+  "original_audio_volumes"?: Record<string, unknown>;
+  "translation_job_id"?: string | null;
+  "dubbing_job_id"?: string | null;
+  "dubbed_cues_hash"?: string | null;
+  "subtitle_mode"?: "bilingual" | "translated";
+  "glossary"?: Record<string, unknown>;
+  "translated_source_hash"?: string | null;
+  "reviewed_version"?: number | null;
+  "reviewed_content_hash"?: string | null;
+  "reviewed_at"?: string | null;
+  "reviewed_by"?: string | null;
+};
+
 export type MediaSourceRef = {
   "source_id": string;
-  "origin": "user_upload" | "licensed_library";
+  "origin": "user_upload" | "licensed_library" | "generated_audio";
   "storage_key": string;
-  "retention_class": "transient_4h" | "library";
+  "retention_class": "transient_4h" | "library" | "generated";
   "metadata"?: Record<string, unknown>;
 };
 
@@ -284,6 +362,11 @@ export type RenderRequest = {
   "quality_profile"?: "preview" | "standard" | "high";
 };
 
+export type RenderingPolicy = {
+  "preserve_color"?: boolean;
+  "preserve_audio"?: boolean;
+};
+
 export type ReplaceSegmentMedia = {
   "command_id"?: string;
   "type": "replace_segment_media";
@@ -305,6 +388,18 @@ export type SearchRequest = {
   "retrieval_mode": "multimodal";
   "thread_id": string;
   "filters"?: Record<string, unknown>;
+};
+
+export type SetLocalizationMetadata = {
+  "command_id"?: string;
+  "type": "set_localization_metadata";
+  "metadata": LocalizationMetadata;
+};
+
+export type SetRenderPolicy = {
+  "command_id"?: string;
+  "type": "set_render_policy";
+  "policy": RenderingPolicy;
 };
 
 export type SetSegmentTransform = {
@@ -329,6 +424,13 @@ export type SetTransition = {
   "duration_us": number;
 };
 
+export type SetVideoAudioVolume = {
+  "command_id"?: string;
+  "type": "set_video_audio_volume";
+  "segment_id": string;
+  "audio_volume": number;
+};
+
 export type SourceMediaReference = {
   "media_id": string;
   "filename": string;
@@ -340,6 +442,14 @@ export type SourceMediaReference = {
   "height"?: number | null;
   "has_audio"?: boolean | null;
   "playback_url"?: string | null;
+};
+
+export type SourceReviewHint = {
+  "filename": string;
+  "start_seconds": number;
+  "end_seconds": number;
+  "low_confidence_word_count": number;
+  "words": Array<string>;
 };
 
 export type SourceUploadResponse = {
@@ -372,6 +482,13 @@ export type SplitSegment = {
   "segment_id": string;
   "at_source_us": number;
   "right_segment_id": string;
+};
+
+export type SubtitleTrackInfo = {
+  "track_id": string;
+  "name": string;
+  "cue_count": number;
+  "is_translation": boolean;
 };
 
 export type TextSegment = {
@@ -421,6 +538,13 @@ export type TransitionEdge = {
   "right_segment_id": string;
   "type": "dissolve";
   "duration_us": number;
+};
+
+export type TranslateRequest = {
+  "base_version": number;
+  "target_language"?: string;
+  "source_track_id"?: string | null;
+  "glossary"?: Record<string, unknown>;
 };
 
 export type TrimSegment = {
@@ -500,6 +624,7 @@ export type VideoSegment = {
   "source_start_us": number;
   "source_duration_us": number;
   "speed"?: number;
+  "audio_volume"?: number;
   "transform"?: Transform;
   "reason"?: string;
   "evidence"?: Array<EvidenceRef>;

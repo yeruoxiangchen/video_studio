@@ -1,10 +1,10 @@
-# CamCat Engineering Contract
+# 剪辑工作台 Engineering Contract
 
 This file is the repository-wide source of truth for every human or AI contributor. Read it before changing code. More specific `AGENTS.md` files may add constraints but may not weaken this contract.
 
 ## Product Goal
 
-CamCat is a multimodal intelligent video-editing multi-agent harness. A user uploads one or more raw source videos, describes a publishing goal, asks for an edit over multiple turns, reviews the evidence and timeline, and renders a real social-ready video with subtitles.
+This workstation is a CamCat-derived multimodal intelligent video-editing harness. A user uploads one or more raw source videos, describes a publishing goal, asks for an edit over multiple turns, reviews the evidence and timeline, and renders a real social-ready video with subtitles.
 
 The completed local product must run through Docker Compose and cover this real path:
 
@@ -93,7 +93,7 @@ docs/           architecture, API, operations, licenses and ADRs
 ### Frontend
 
 - React, Vite, TypeScript and Tailwind; retain Nova layout, sizing, colors, typography, panels, and interaction model.
-- Rename all user-visible Nova branding to CamCat and replace the logo with a CamCat mark without changing the surrounding design system.
+- Use 剪辑工作台 as the user-visible product label and a generic editing mark; preserve upstream CamCat attribution without changing the surrounding design system.
 - Replace static seed behavior with typed API data for library, ingestion, search evidence, graph trace, plans, subtitles, versions/conflicts, render progress, playback, and export.
 - Show actionable loading, empty, error, reconnect, conflict, and rollback states. Do not display fake completed steps while work is pending.
 - Preserve accessibility: labeled controls, keyboard navigation, visible focus, semantic status/live regions, and sufficient contrast.

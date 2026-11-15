@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import SecretStr, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -46,9 +47,37 @@ class Settings(BaseSettings):
     llm_base_url: str
     llm_api_key: SecretStr
     llm_model: str = "qwen3-vl-plus"
+    llm_json_schema_enabled: bool = False
+    source_evidence_enabled: bool = True
+    visual_analysis_base_url: str | None = None
+    visual_analysis_api_key: SecretStr | None = None
+    visual_analysis_model: str | None = None
+    narrative_base_url: str = ""
+    narrative_api_key: SecretStr = SecretStr("")
+    narrative_model: str = ""
     asr_base_url: str
     asr_api_key: SecretStr
     asr_model: str = "qwen3-asr-flash"
+
+    translation_base_url: str = ""
+    translation_api_key: SecretStr = SecretStr("")
+    translation_model: str = ""
+    translation_backend: Literal["chat", "hymt"] = "chat"
+    tts_base_url: str = ""
+    tts_api_key: SecretStr = SecretStr("")
+    tts_model: str = ""
+    tts_voice: str = ""
+    tts_revision: str = "1"
+    tts_languages: list[str] = Field(default_factory=lambda: ["en"])
+    tts_max_speed: float = Field(default=1.2, ge=1, le=1.2)
+    tts_max_response_bytes: int = Field(default=25 * 1024 * 1024, ge=1024, le=100 * 1024 * 1024)
+
+    @field_validator("translation_base_url", "tts_base_url")
+    @classmethod
+    def optional_provider_url(cls, value: str) -> str:
+        if value and not value.startswith(("http://", "https://")):
+            raise ValueError("localization provider URLs must be absolute HTTP(S) URLs")
+        return value.rstrip("/")
 
     provider_gateway_api_key: SecretStr = SecretStr("")
     bailian_api_host: str = ""
@@ -57,12 +86,14 @@ class Settings(BaseSettings):
     provider_timeout_seconds: float = 120.0
     provider_max_retries: int = 2
     upload_max_bytes: int = 250 * 1024 * 1024
+    delivery_max_bytes: int = Field(default=512 * 1024 * 1024, gt=0)
     upload_owner_quota_bytes: int = 2 * 1024 * 1024 * 1024
     segment_window_seconds: float = 5.0
     segment_minimum_seconds: float = 3.0
     runtime_dir: str = "/var/lib/camcat"
     worker_poll_seconds: float = 1.0
     worker_id: str = "worker-1"
+    worker_role: Literal["all", "control", "analysis", "localization", "render"] = "all"
     job_lease_seconds: int = 600
 
     @field_validator("embedding_dimension")
@@ -82,6 +113,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_security_mode(self) -> Settings:
+        narrative = (
+            self.narrative_base_url,
+            self.narrative_api_key.get_secret_value(),
+            self.narrative_model,
+        )
+        if any(narrative) and (
+            not all(narrative) or not self.narrative_base_url.startswith(("http://", "https://"))
+        ):
+            raise ValueError("narrative provider requires an HTTP URL, private key and model")
+        self.narrative_base_url = self.narrative_base_url.rstrip("/")
         if self.security_mode not in {"local-single-user", "multi-user"}:
             raise ValueError("security_mode must be local-single-user or multi-user")
         if self.security_mode == "multi-user":

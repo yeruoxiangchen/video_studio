@@ -10,7 +10,9 @@ from camcat.services.providers import (
     QwenChatClient,
     QwenEmbeddingClient,
     QwenRerankerClient,
+    QwenVisualAnalysisClient,
     SegmentSemantics,
+    SourceClipSemantics,
     parse_structured_content,
 )
 from pydantic import SecretStr, ValidationError
@@ -35,6 +37,56 @@ def settings() -> Settings:
     )
 
 
+def test_source_visual_contract_is_bounded_and_retains_shot_evidence(tmp_path: Path):
+    client = QwenVisualAnalysisClient(settings())
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"unit input")
+    captured = {}
+
+    def request(method, path, **kwargs):
+        captured.update(kwargs["data"])
+        return {
+            "analysis": {
+                "description": "A person walks away",
+                "scene": "gallery",
+                "composition": "wide shot",
+                "risk_score": 0,
+                "subject_view": "back",
+                "camera_motion": "push in",
+                "temporal_evidence": [
+                    "Beginning: person walking toward the camera",
+                    "End: person stops; the camera keeps moving closer",
+                ],
+            },
+            "usage": {"prompt_tokens": 120, "completion_tokens": 60},
+        }
+
+    client.request = request
+    result = client.analyze_video(source, compact=True)
+    import json
+
+    schema = json.loads(captured["response_schema"])
+    assert captured["max_tokens"] == "1536"
+    assert schema["properties"]["description"]["maxLength"] <= 512
+    assert result.subject_view == "back"
+    assert result.camera_motion == "push in"
+    assert {"opening_state", "closing_state"} <= set(schema["required"])
+    assert result.temporal_evidence[-1].startswith("End:")
+    assert client.last_analysis_usage == {"prompt_tokens": 120, "completion_tokens": 60}
+
+
+def test_shot_size_cannot_be_misreported_as_camera_angle():
+    with pytest.raises(ValidationError):
+        SourceClipSemantics(
+            description="A person's face",
+            scene="indoor",
+            composition="close view",
+            risk_score=0,
+            shot_size="close-up",
+            camera_angle="Close-up",
+        )
+
+
 def test_structured_content_accepts_json_object() -> None:
     assert parse_structured_content('{"summary":"ok"}') == {"summary": "ok"}
 
@@ -53,6 +105,22 @@ def test_chat_requests_json_correction_once_before_failing():
     assert client.json_completion(system="Return JSON", user="目标") == {"summary": "ok"}
     assert len(requests) == 2
     assert "valid JSON" in requests[1]["messages"][0]["content"]
+
+
+def test_caller_can_request_greedy_decoding_across_json_correction():
+    client = QwenChatClient(settings())
+    packets = []
+
+    def request(method, path, **kwargs):
+        packets.append(kwargs["json"])
+        content = '{"summary":' if len(packets) == 1 else '{"summary":"ok"}'
+        return {"choices": [{"message": {"content": content}}]}
+
+    client.request = request
+    assert client.json_completion(system="Return JSON", user="source", temperature=0) == {
+        "summary": "ok"
+    }
+    assert [packet["temperature"] for packet in packets] == [0, 0]
 
 
 def test_structured_content_normalizes_top_level_model_array() -> None:
@@ -150,3 +218,21 @@ def test_segment_semantics_rejects_unbounded_risk_and_empty_description() -> Non
                 "risk_labels": [],
             }
         )
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_command_schema_is_sent_only_to_explicitly_enabled_providers(enabled: bool) -> None:
+    client = QwenChatClient(settings().model_copy(update={"llm_json_schema_enabled": enabled}))
+    captured: dict[str, Any] = {}
+
+    def request(method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+        captured.update(kwargs)
+        return {"choices": [{"message": {"content": '{"commands": []}'}}]}
+
+    client.request = request  # type: ignore[method-assign]
+    schema = {"type": "object", "properties": {"commands": {"type": "array"}}}
+    client.json_completion(system="Return commands", user="Edit", response_schema=schema)
+    response_format = captured["json"]["response_format"]
+    assert response_format["type"] == ("json_schema" if enabled else "json_object")
+    if enabled:
+        assert response_format["json_schema"]["schema"] == schema
