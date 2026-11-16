@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr
     llm_model: str = "qwen3-vl-plus"
     llm_json_schema_enabled: bool = False
+    llm_health_path: Literal["/health", "/v1/models"] = "/health"
+    llm_max_output_tokens: int = Field(default=0, ge=0, le=32768)
+    gateway_receipts_dir: str = ""
     source_evidence_enabled: bool = True
     visual_analysis_base_url: str | None = None
     visual_analysis_api_key: SecretStr | None = None

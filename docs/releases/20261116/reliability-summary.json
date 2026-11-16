@@ -1,0 +1,61 @@
+{
+  "source_run": "soak-20261115T062639Z-7c7e12",
+  "workload": {
+    "video_seconds": 12,
+    "width": 1280,
+    "height": 720,
+    "cues": 2,
+    "fps": 30,
+    "render_quality": "preview",
+    "clients": 4,
+    "duration_seconds": 600,
+    "source_job_id": "19b6149f-a5a8-404c-8113-ff38816d89f8",
+    "scope": "Existing analyzed source; real translation, speech and render. Source analysis and Agent planning are excluded from timing."
+  },
+  "summary": {
+    "completed_pipelines": 8,
+    "failed_pipelines": 0,
+    "completed_video_seconds": 96,
+    "stages": {
+      "translation": {
+        "jobs": 7,
+        "queue_p50_seconds": 4.376,
+        "queue_p95_seconds": 10.34,
+        "execution_p50_seconds": 3.516,
+        "execution_p95_seconds": 3.662,
+        "total_p95_seconds": 13.879
+      },
+      "dubbing": {
+        "jobs": 8,
+        "queue_p50_seconds": 9.454,
+        "queue_p95_seconds": 10.129,
+        "execution_p50_seconds": 3.058,
+        "execution_p95_seconds": 3.275,
+        "total_p95_seconds": 13.153
+      },
+      "render": {
+        "jobs": 8,
+        "queue_p50_seconds": 6.421,
+        "queue_p95_seconds": 12.617,
+        "execution_p50_seconds": 7.249,
+        "execution_p95_seconds": 7.672,
+        "total_p95_seconds": 20.053
+      },
+      "cached_dubbing": {
+        "jobs": 8,
+        "queue_p50_seconds": 0.679,
+        "queue_p95_seconds": 1.731,
+        "execution_p50_seconds": 1.676,
+        "execution_p95_seconds": 1.78,
+        "total_p95_seconds": 3.465
+      }
+    },
+    "model_rss_mib": {
+      "initial": 3549.06,
+      "final": 3584.33,
+      "maximum": 3584.48,
+      "delta_including_warmup": 35.27
+    }
+  },
+  "state": "completed"
+}

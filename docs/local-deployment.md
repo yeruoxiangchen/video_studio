@@ -1,5 +1,7 @@
 # 本机 CamCat 完整部署
 
+Go 网关接入、独立账户及实际剪辑/译制对账见 [视频工作台网关接入](../../llm_gateway/docs/video-studio.md)。已保存连接会由本部署配置生成器恢复，模型渠道变更需同步核对。
+
 源码基线为 `upstream.lock.json` 中的 CamCat 提交。工作台、领域命令、LangGraph、
 任务队列和渲染沿用上游，译制接入原时间线。
 

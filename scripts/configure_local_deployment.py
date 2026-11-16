@@ -72,6 +72,29 @@ def local_editing_profile(
     )
 
 
+def with_gateway_profile(values: dict, connection: dict | None) -> dict:
+    result = dict(values)
+    if connection is None:
+        return result
+    if result.get("CAMCAT_TRANSLATION_BACKEND", "chat") != "chat":
+        raise ValueError("Update gateway channels before changing the translation backend")
+    if {provider["role"] for provider in connection["providers"]} != {"LLM", "TRANSLATION"}:
+        raise ValueError("The saved gateway channel configuration is incomplete")
+    for provider in connection["providers"]:
+        role = provider["role"]
+        if values.get(f"CAMCAT_{role}_MODEL") != provider["upstream_model"]:
+            raise ValueError("Update the gateway channel before changing its upstream model")
+        result[f"CAMCAT_{role}_MODEL"] = provider["alias"]
+        result[f"CAMCAT_{role}_BASE_URL"] = "http://10.0.2.2:29480"
+        result[f"CAMCAT_{role}_API_KEY"] = connection["api_key"]
+    result.update(
+        CAMCAT_LLM_HEALTH_PATH="/v1/models",
+        CAMCAT_LLM_MAX_OUTPUT_TOKENS="4096",
+        CAMCAT_GATEWAY_RECEIPTS_DIR="/var/lib/camcat/gateway-receipts",
+    )
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--visual-model", choices=["Qwen/Qwen3-VL-8B-Instruct", "Qwen/Qwen3.5-9B"])
@@ -91,6 +114,12 @@ def main() -> None:
     ):
         raise RuntimeError("Prepare the private local model configurations first")
     existing = dotenv_values(source / ".env")
+    connection_path = root / "config/go-gateway-client.json"
+    connection = json.loads(connection_path.read_text()) if connection_path.exists() else None
+    if connection:
+        # Select and validate the original model profiles before restoring gateway aliases.
+        for provider in connection["providers"]:
+            existing[f"CAMCAT_{provider['role']}_MODEL"] = provider["upstream_model"]
     visual = local_visual_profile(
         existing.get("CAMCAT_VISUAL_ANALYSIS_MODEL") or existing.get("CAMCAT_LLM_MODEL"),
         args.visual_model,
@@ -152,6 +181,7 @@ def main() -> None:
     for name in ("PIXABAY_API_KEY", "CAMCAT_PIXABAY_API_KEY"):
         if existing.get(name) in {"change-me", "change-me-pixabay-key"}:
             values[name] = ""
+    values = with_gateway_profile(values, connection)
     for name, value in values.items():
         assert value is not None
         set_key(source / ".env", name, value)

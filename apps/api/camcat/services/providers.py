@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import mimetypes
 import re
 import time
@@ -77,6 +78,8 @@ class _ProviderClient:
                     time.sleep(0.25 * (2**attempt))
                     continue
                 receipt["status_code"] = response.status_code
+                if gateway_request_id := response.headers.get("X-Request-ID"):
+                    receipt["gateway_request_id"] = gateway_request_id
                 if response.status_code == 429 or response.status_code >= 500:
                     last_error = ProviderError(
                         f"transient provider response {response.status_code}",
@@ -114,6 +117,8 @@ class _ProviderClient:
                     raise ProviderOutputError("provider returned a non-object JSON response")
                 if isinstance(payload.get("usage"), dict):
                     receipt["usage"] = safe_usage(payload["usage"])
+                    if self.settings.gateway_receipts_dir and receipt.get("gateway_request_id"):
+                        self._save_gateway_receipt(receipt)
                 if isinstance(payload.get("camcat_metrics"), dict):
                     receipt["timings"] = safe_timings(payload["camcat_metrics"])
                 choices = payload.get("choices")
@@ -124,6 +129,22 @@ class _ProviderClient:
 
     def healthcheck(self) -> None:
         self.request("GET", "/health")
+
+    def _save_gateway_receipt(self, receipt: dict[str, Any]) -> None:
+        record = {
+            key: receipt[key]
+            for key in ("request_id", "gateway_request_id", "model", "status_code", "usage")
+        }
+        try:
+            folder = Path(self.settings.gateway_receipts_dir)
+            folder.mkdir(parents=True, exist_ok=True)
+            target = folder / f"{receipt['request_id']}.json"
+            temporary = target.with_suffix(".tmp")
+            temporary.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
+            temporary.replace(target)
+        except OSError:
+            # Recording must never turn a settled model response into a retry.
+            logging.getLogger("camcat.providers").exception("gateway_receipt_write_failed")
 
 
 class QwenEmbeddingClient(_ProviderClient):
@@ -238,6 +259,11 @@ class QwenChatClient(_ProviderClient):
         self.model = settings.llm_model
         self.json_schema_enabled = settings.llm_json_schema_enabled
         self.source_evidence_enabled = settings.source_evidence_enabled
+        self.health_path = settings.llm_health_path
+        self.max_output_tokens = settings.llm_max_output_tokens
+
+    def healthcheck(self) -> None:
+        self.request("GET", self.health_path)
 
     def json_completion(
         self,
@@ -300,6 +326,7 @@ class QwenChatClient(_ProviderClient):
                 ],
                 "response_format": response_format,
                 "temperature": temperature,
+                **({"max_tokens": self.max_output_tokens} if self.max_output_tokens else {}),
             },
         )
         try:

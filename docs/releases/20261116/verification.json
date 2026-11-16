@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-11-16T08:19:44.193862+00:00",
+  "scope": "publication verification of current source; targeted application tests use controlled model responses and real library/business adapters, without GPU inference",
+  "unit_checks": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_files": [
+    "apps/api/tests/unit/test_chat_gateway_integration.py",
+    "apps/api/tests/unit/test_go_gateway_configuration.py"
+  ],
+  "static_checks": {
+    "python_files_parsed": 311,
+    "shell_files_checked": 2,
+    "syntax_errors": [],
+    "secret_pattern_findings": []
+  },
+  "git_diff_check": "passed",
+  "historical_business_model_acceptance": "See linked frozen reports; not rerun during source publication"
+}

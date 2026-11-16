@@ -1,5 +1,7 @@
 # 剪辑工作台
 
+[简历固定版本](https://github.com/yeruoxiangchen/video_studio/tree/resume-20261116) · [最新代码](https://github.com/yeruoxiangchen/video_studio/tree/main) · [版本与评测记录](docs/versions.md) · [操作演示](docs/demos/README.md)
+
 用文字完成视频剪辑，再把同一条时间线译制成英文视频。支持直接打开「译制」面板，也支持向 Agent 发送翻译、配音指令。
 
 项目基于 [CamCat-Agentic-Cut-Platform](https://github.com/Kehan-Peng/CamCat-Agentic-Cut-Platform) 的真实源码扩展，上游固定提交为 `1e8d0492a9793f47d9a69362378fb2535f386b52`。保留上游 Git 历史及 [MIT 许可](LICENSE)，复用其原片分析、素材检索、LangGraph 剪辑、版本管理与 FFmpeg 渲染能力。
