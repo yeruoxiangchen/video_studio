@@ -1,5 +1,7 @@
 # 剪辑工作台
 
+[简历固定版本与最新版本](docs/versions.md)
+
 用文字完成视频剪辑，再把同一条时间线译制成英文视频。支持直接打开「译制」面板，也支持向 Agent 发送翻译、配音指令。
 
 项目基于 [CamCat-Agentic-Cut-Platform](https://github.com/Kehan-Peng/CamCat-Agentic-Cut-Platform) 的真实源码扩展，上游固定提交为 `1e8d0492a9793f47d9a69362378fb2535f386b52`。保留上游 Git 历史及 [MIT 许可](LICENSE)，复用其原片分析、素材检索、LangGraph 剪辑、版本管理与 FFmpeg 渲染能力。
@@ -32,6 +34,10 @@
 React / TypeScript / Vite、FastAPI / Pydantic、LangGraph、PostgreSQL / SQLAlchemy / Alembic、Milvus、MinIO、FFmpeg、Docker Compose。
 
 当前验证使用全本地模型：Qwen 多模态嵌入与重排、Qwen 视觉分析及剪辑规划、faster-whisper 多语言识别、Qwen 翻译、Piper 英文配音。模型、权重版本和部署角色分别记录在 `infra/` 与[部署说明](docs/local-deployment.md)，权重不随源码分发。
+
+## Go 网关接入
+
+剪辑规划和字幕翻译已接入 Go 网关；两条实际浏览器旅程通过，应用、网关及账户记录的 28,214 Token 一致，残余预占为 0。[配置与记录](docs/go-gateway.md)。
 
 ## 小规模质量记录
 

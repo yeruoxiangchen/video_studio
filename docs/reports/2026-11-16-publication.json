@@ -1,0 +1,12 @@
+{
+  "as_of": "2026-11-16",
+  "target": "resume-20261116 and main application code",
+  "backend_unit_tests": 550,
+  "frontend_tests": 37,
+  "ruff": "passed",
+  "mypy": "passed; 116 source files",
+  "api_contract": "passed",
+  "typescript_and_vite": "passed",
+  "live_e2e_reference": "2026-11-16-video-studio.json in the paired gateway repository; recorded real browser run, not rerun for publication",
+  "privacy_and_staged_files": "passed"
+}
