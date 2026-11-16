@@ -18,5 +18,6 @@
     "secret_pattern_findings": []
   },
   "git_diff_check": "passed",
-  "historical_business_model_acceptance": "See linked frozen reports; not rerun during source publication"
+  "historical_business_model_acceptance": "See linked frozen reports; not rerun during source publication",
+  "concurrent_release_preserved": "61d5d425b57f129aa0a66c196f577e847add5d04; existing resume tag preserved; merge adds documentation only"
 }

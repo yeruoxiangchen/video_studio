@@ -1,0 +1,139 @@
+{
+  "tag": "resume-20261116",
+  "as_of": "2026-11-16",
+  "method": "Freeze of previously tested code; scores aggregated from the recorded runs.",
+  "retrieval": {
+    "scope": "MSR-VTT encoding retrieval pilot: 20 queries / 100 candidate videos; 2048D; excludes full hybrid/rerank pipeline",
+    "metrics": {
+      "recall@1": 0.7,
+      "recall@5": 0.95,
+      "recall@10": 0.95,
+      "mrr@10": 0.8
+    },
+    "runtime_score": "Per query/candidate, not a single system-wide score"
+  },
+  "render_verification": {
+    "scope": "Four v7 editing outputs plus five v7 localization outputs",
+    "outputs": 9,
+    "zero_frame_delta": 9,
+    "full_decode_passed": 9,
+    "maximum_absolute_duration_error_seconds": 0.000667,
+    "rows": [
+      {
+        "case": "agentic-vbench-assembly-task1",
+        "expected_frames": 654,
+        "actual_frames": 654,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.0,
+        "full_decode_succeeds": true,
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "case": "agentic-vbench-assembly-task2",
+        "expected_frames": 974,
+        "actual_frames": 974,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.000333,
+        "full_decode_succeeds": true,
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "case": "agentic-vbench-sequencing-task1",
+        "expected_frames": 4547,
+        "actual_frames": 4547,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.000333,
+        "full_decode_succeeds": true,
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "case": "agentic-vbench-sequencing-task2",
+        "expected_frames": 1350,
+        "actual_frames": 1350,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.0,
+        "full_decode_succeeds": true,
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "case": "1700",
+        "expected_frames": 162,
+        "actual_frames": 162,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.0,
+        "full_decode_succeeds": true,
+        "width": 640,
+        "height": 360
+      },
+      {
+        "case": "1898",
+        "expected_frames": 674,
+        "actual_frames": 674,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.000333,
+        "full_decode_succeeds": true,
+        "width": 640,
+        "height": 360
+      },
+      {
+        "case": "1947",
+        "expected_frames": 243,
+        "actual_frames": 243,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.0,
+        "full_decode_succeeds": true,
+        "width": 640,
+        "height": 360
+      },
+      {
+        "case": "1965",
+        "expected_frames": 205,
+        "actual_frames": 205,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.000667,
+        "full_decode_succeeds": true,
+        "width": 640,
+        "height": 360
+      },
+      {
+        "case": "1968",
+        "expected_frames": 486,
+        "actual_frames": 486,
+        "frame_delta": 0,
+        "duration_delta_seconds": 0.0,
+        "full_decode_succeeds": true,
+        "width": 640,
+        "height": 360
+      }
+    ]
+  },
+  "go_gateway_integration": {
+    "state": "passed",
+    "calls": 11,
+    "application_tokens": 28214,
+    "gateway_tokens": 28214,
+    "account_tokens": 28214,
+    "reserved_tokens": 0,
+    "request_ids_match": true,
+    "per_request_usage_matches": true,
+    "browser": {
+      "startTime": "2026-11-16T05:00:37.843Z",
+      "duration": 544699.288,
+      "expected": 2,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "scope": "Editing planning and subtitle translation via Go gateway; specialized media services remain separate",
+    "as_of": "2026-11-16",
+    "backend_unit_tests": 550,
+    "frontend_unit_tests": 37,
+    "ruff": "passed",
+    "mypy": "passed",
+    "runtime_code_matches": true
+  }
+}

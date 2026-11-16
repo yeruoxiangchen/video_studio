@@ -1,11 +1,20 @@
-# 版本入口
+# 版本与复现
 
 | 入口 | 用途 |
 | --- | --- |
-| [`resume-20261116`](https://github.com/yeruoxiangchen/video_studio/tree/resume-20261116) | 2026-11-16 冻结的简历项目源码快照 |
-| [`main`](https://github.com/yeruoxiangchen/video_studio/tree/main) | 最新源码，后续更新继续进入此分支 |
-| [本次发布记录](releases/20261116/README.md) | 源码清单、评测对应关系和发布检查 |
-| [操作演示](demos/README.md) | 实际网页操作及结果 |
+| [`resume-20261116`](https://github.com/yeruoxiangchen/video_studio/tree/resume-20261116) | 简历固定源码：多轮剪辑、译制、媒体交付及 Go 网关接入。保留已发布提交 61d5d42。 |
+| [`main`](https://github.com/yeruoxiangchen/video_studio/tree/main) | 最新源码与发布记录；本次追加完整源码清单、针对性检查和历史评测入口。 |
+| [本次发布记录](releases/20261116/README.md) | 源码 SHA-256、评测对应关系及发布检查 |
+| [操作与成片](demos/README.md) | 文本译制、面板操作和英文成片 |
 
-固定标签与发布时的 main 指向同一份已检查源码。后续 main 的更新不移动固定标签。
-评测日期、任务范围和对应执行核心记录在发布材料中；历史结果沿用各自的冻结协议。
+```bash
+git clone https://github.com/yeruoxiangchen/video_studio.git
+cd video_studio
+git checkout resume-20261116
+```
+
+最新版本使用 `git checkout main`。启动与模型配置见 [README](../README.md)。
+简历标签保持固定；当前 main 的应用代码与该标签一致，额外整理了发布文档与报告。
+
+[数据摘要](reports/2026-11-16-resume.json) · [既有完整发布检查](reports/2026-11-16-publication.json) · [Go 网关接入](go-gateway.md)。
+历史指标的样本、输入链路和原始日期保留在对应评测记录中。

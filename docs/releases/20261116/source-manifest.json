@@ -36,8 +36,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5439,
-      "sha256": "dfcd9df08b16116f17e5b41ef20f503f7efa8ba21ed50607332f912e0940b449",
+      "bytes": 5662,
+      "sha256": "e0d6fc77816e8853ccaddb3395d783894d728a3c56573b4a3417a911a69ef3a0",
       "workspace_sha256": "85ce7e50dfffdb42ca4e25377d166039524f59b099a376a942fda5d60e186d9a"
     },
     {
@@ -2084,5 +2084,6 @@
   "publication_documentation_overrides": [
     "README.md"
   ],
-  "source_tree_snapshot_role": "Current source copied from workspace; public navigation and standalone documentation paths adjusted in publication copy."
+  "source_tree_snapshot_role": "Current source copied from workspace; public navigation and standalone documentation paths adjusted in publication copy.",
+  "merged_concurrent_release": "61d5d425b57f129aa0a66c196f577e847add5d04"
 }
