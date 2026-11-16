@@ -18,6 +18,44 @@ from camcat.domain.project import (
 )
 
 
+def test_source_audio_partial_trim_follows_its_matching_video_range():
+    class SourceAudioProposals(Proposals):
+        def json_completion(self, *, system, user, response_schema=None):
+            if response_schema and "terms" in response_schema.get("properties", {}):
+                return {"terms": ["Camcat"]}
+            self.requests.append(json.loads(user))
+            return {
+                "requires_full_plan": False,
+                "commands": [
+                    {
+                        "type": "trim_segment",
+                        "segment_id": "v",
+                        "source_start_us": 0,
+                        "source_duration_us": 2_500_000,
+                    },
+                    {
+                        "type": "update_audio_segment",
+                        "segment_id": "a",
+                        "source_duration_us": 2_500_000,
+                    },
+                    {"type": "update_text_segment", "segment_id": "c", "text": "Hi Camcat!"},
+                ],
+            }
+
+    state = revision_state()
+    audio = state["current_document"]["timeline"]["tracks"][1]
+    audio["role"] = "dialogue"
+    audio["segments"][0]["source_id"] = "footage"
+    original = deepcopy(state)
+    model = SourceAudioProposals(repaired=False)
+    result = CamCatGraph(llm=model, retrieval=object()).generate_commands(state)
+    after = EditingProjectV2.model_validate(result["simulated_document"])
+    audio = after.timeline.tracks[1].segments[0]
+    assert audio.source_duration_us == audio.timeline_duration_us == 2_500_000
+    assert len(model.requests) == 1
+    assert state == original
+
+
 def revision_state():
     project = EditingProjectV2(
         project_id="timing-repair",

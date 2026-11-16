@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import {workflowPresentation} from "./src/workflowPresentation";
+import {combineEvidence, workflowPresentation} from "./src/workflowPresentation";
 import {
   Activity,
   ArrowUp,
@@ -258,12 +258,9 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
         }))
       : [];
 
-    return runView?.evidence.length
-      ? (runView.evidence as EvidenceItem[]).map((item, index) => ({
-          ...item,
-          active: selectedEvidenceId ? item.id === selectedEvidenceId : index === 0,
-        }))
-      : uploadedEvidence;
+    return combineEvidence(
+      uploadedEvidence, (runView?.evidence ?? []) as EvidenceItem[], selectedEvidenceId,
+    );
   }, [editingSession?.state.metadata, runView, selectedEvidenceId, sourceUpload]);
 
   const traceRows = useMemo<WorkspaceTraceRow[]>(() => {
@@ -415,7 +412,6 @@ function useWorkspaceController({ project, initialSession, initialPage = "editin
       setEditingSession(result.editingSession);
       const audit = await api.getEditingSessionAudit(result.editingSession.editing_session_id);
       setAuditEvents(audit.items);
-      setSelectedEvidenceId(result.agentRun.ranked_segments?.[0]?.segment_id);
       setProgressLabel("剪辑领域命令已持久化为新版本");
       setStatus("ready");
     } catch (caught) {

@@ -1,0 +1,65 @@
+{
+  "as_of": "2026-11-16",
+  "scope": "Actual authored browser demonstration of natural-language editing, not a model quality benchmark",
+  "first_cut": {
+    "version": 2,
+    "duration_seconds": 17,
+    "caption_characters": 47,
+    "clips": 1
+  },
+  "revised_cut": {
+    "version": 3,
+    "duration_seconds": 9,
+    "caption_characters": 32,
+    "clips": 1
+  },
+  "rollback": {
+    "version": 4,
+    "restores_first_cut": true
+  },
+  "media_checks": {
+    "first-cut": {
+      "duration_seconds": 17.0,
+      "audio_present": true,
+      "full_decode": "passed"
+    },
+    "revised-cut": {
+      "duration_seconds": 9.0,
+      "audio_present": true,
+      "full_decode": "passed"
+    }
+  },
+  "checks": {
+    "state": "passed",
+    "backend_unit_tests": 558,
+    "frontend_tests": 41,
+    "ruff": "passed",
+    "mypy": "passed",
+    "api_contract": "passed",
+    "typescript_vite": "passed",
+    "browser": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "retries": 0
+    },
+    "rollback_restores_video_audio_and_captions": true,
+    "recorded_backend_sha256": {
+      "agent/graph.py": "9e212b1c85c38c0b3db8440bdac081eb1fb385c653d801cb99bd965b23de3356",
+      "editing/linked_audio.py": "eca8dc446e29a280de348709b3d3b42a6dd92fa1e32e05982762594e9dae9e41"
+    },
+    "current_backend_sha256": {
+      "agent/graph.py": "9e212b1c85c38c0b3db8440bdac081eb1fb385c653d801cb99bd965b23de3356",
+      "editing/linked_audio.py": "035b460fd21efb0ff06c28bad6c651da2bb3d0fb584410c9f98459b859072294"
+    },
+    "current_web_assets": [
+      "/assets/index-DxMN1CVk.js",
+      "/assets/index-CNfiaLxI.css"
+    ]
+  },
+  "fixes": [
+    "Keep uploaded footage available and selected when retrieval returns candidates",
+    "Complete omitted timing fields for unambiguous source-linked audio trims; preserve explicit conflicts and structural edits"
+  ],
+  "demo_manifest": "../demos/editing-manifest.json"
+}

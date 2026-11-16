@@ -3,6 +3,16 @@ import type {EditingSessionResponse, JobResponse} from "./camcatApi";
 type Input = {status: string; activeJob?: Pick<JobResponse, "kind" | "status">;
   editingSession?: EditingSessionResponse; renderResult?: JobResponse; agentRun?: unknown};
 
+export function combineEvidence<T extends {id: string}>(uploaded: T[], recalled: T[], selectedId?: string) {
+  const byId = new Map<string, T>();
+  for (const item of [...uploaded, ...recalled]) {
+    if (!byId.has(item.id)) byId.set(item.id, item);
+  }
+  const items = Array.from(byId.values());
+  const activeId = items.find(item => item.id === selectedId)?.id ?? items[0]?.id;
+  return items.map(item => ({...item, active: item.id === activeId}));
+}
+
 export function workflowPresentation(input: Input) {
   const value = input.editingSession?.state.metadata?.localization;
   const localization = value && typeof value === "object" ? value as Record<string, unknown> : {};

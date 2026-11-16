@@ -1,0 +1,192 @@
+{
+  "product": "剪辑工作台",
+  "kind": "Real natural-language editing browser demonstration",
+  "files": {
+    "04-editing-workflow.mp4": {
+      "sha256": "b94be9e1c24ce6980725eab27c369c13f1dffc52c94cb04bc7f98a7dd604653c",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1152,
+            "nb_frames": "1139"
+          }
+        ],
+        "format": {
+          "duration": "56.950000",
+          "size": "3130919"
+        }
+      },
+      "full_decode": "passed"
+    },
+    "05-editing-comparison.mp4": {
+      "sha256": "1934f38eac34917e0c02d129c6a214c43a9da714b23a872848317bc5594455ff",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1280,
+            "height": 792,
+            "nb_frames": "1020"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "nb_frames": "1593"
+          }
+        ],
+        "format": {
+          "duration": "34.021029",
+          "size": "6035471"
+        }
+      },
+      "full_decode": "passed"
+    },
+    "06-edited-chinese.mp4": {
+      "sha256": "30f9a19348129816218ee898bf2c6e9826d448efab694e1bfa375141b03389e3",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "nb_frames": "270"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "nb_frames": "421"
+          }
+        ],
+        "format": {
+          "duration": "9.000000",
+          "size": "3860712"
+        }
+      },
+      "full_decode": "passed"
+    },
+    "editing-workspace.png": {
+      "sha256": "e226e4624cc98a51228b314f2900b01b4f2b421272730d9ad07e8b037a346eb0",
+      "bytes": 516648
+    }
+  },
+  "prompts": [
+    "仅使用我上传的地球科普原片，截取原片第3秒到第20秒，剪成17秒的16:9横屏短片，保留中文原声，自动添加中文字幕。标题设为《从太空看地球》，剪辑说明用简短中文。",
+    "把原片范围改为第3秒到第12秒，成片缩短到9秒；中文字幕改得更简短，保持中文原声和16:9横屏。"
+  ],
+  "first": {
+    "version": 2,
+    "duration_seconds": 17,
+    "caption_characters": 47,
+    "clips": 1
+  },
+  "revised": {
+    "version": 3,
+    "duration_seconds": 9,
+    "caption_characters": 32,
+    "clips": 1
+  },
+  "rollback": {
+    "version": 4,
+    "restores_first_cut": true
+  },
+  "media_checks": {
+    "first-cut": {
+      "duration_seconds": 17.0,
+      "audio_present": true,
+      "full_decode": "passed"
+    },
+    "revised-cut": {
+      "duration_seconds": 9.0,
+      "audio_present": true,
+      "full_decode": "passed"
+    }
+  },
+  "observed_run_seconds": {
+    "analysis": 72.6,
+    "first_planning": 147.2,
+    "revision_planning": 272.0,
+    "first_render_and_preview": 20.9,
+    "revised_render_and_preview": 16.9
+  },
+  "recording": {
+    "actual_browser": true,
+    "waiting_shortened": true,
+    "raw_recording_ranges_seconds": [
+      [
+        0.0,
+        4.757
+      ],
+      [
+        72.345,
+        78.552
+      ],
+      [
+        220.708,
+        227.261
+      ],
+      [
+        242.177,
+        251.694
+      ],
+      [
+        518.645,
+        525.168
+      ],
+      [
+        536.05,
+        552.88
+      ]
+    ],
+    "workflow_audio": "silent screen recording",
+    "comparison_audio": "actual source/output audio; no replacement narration",
+    "original_excerpt_seconds": 8,
+    "downloaded_final_output_unchanged": true
+  },
+  "provenance": {
+    "visuals": "NASA — Seeing Earth as Only NASA Can",
+    "source_url": "https://svs.gsfc.nasa.gov/14831/",
+    "credit": "NASA",
+    "source_music": "Original Universal Production Music removed before narration",
+    "source_narration": "Locally synthesized Chinese narration; authored demo script"
+  },
+  "poster_stage": "first_cut",
+  "verification": {
+    "state": "passed",
+    "backend_unit_tests": 558,
+    "frontend_tests": 41,
+    "ruff": "passed",
+    "mypy": "passed",
+    "api_contract": "passed",
+    "typescript_vite": "passed",
+    "browser": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "retries": 0
+    },
+    "rollback_restores_video_audio_and_captions": true,
+    "recorded_backend_sha256": {
+      "agent/graph.py": "9e212b1c85c38c0b3db8440bdac081eb1fb385c653d801cb99bd965b23de3356",
+      "editing/linked_audio.py": "eca8dc446e29a280de348709b3d3b42a6dd92fa1e32e05982762594e9dae9e41"
+    },
+    "current_backend_sha256": {
+      "agent/graph.py": "9e212b1c85c38c0b3db8440bdac081eb1fb385c653d801cb99bd965b23de3356",
+      "editing/linked_audio.py": "035b460fd21efb0ff06c28bad6c651da2bb3d0fb584410c9f98459b859072294"
+    },
+    "current_web_assets": [
+      "/assets/index-DxMN1CVk.js",
+      "/assets/index-CNfiaLxI.css"
+    ]
+  }
+}

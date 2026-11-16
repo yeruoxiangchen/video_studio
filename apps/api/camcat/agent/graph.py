@@ -78,7 +78,10 @@ from camcat.domain.project import (
 from camcat.domain.reducer import reduce_commands
 from camcat.domain.render_policy import RenderingPolicy
 from camcat.editing.captions import source_captions as _source_captions
-from camcat.editing.linked_audio import linked_background_audio_commands
+from camcat.editing.linked_audio import (
+    linked_background_audio_commands,
+    linked_source_audio_updates,
+)
 from camcat.editing.policies import (
     choose_aspect_ratio,
     explicit_external_ratio,
@@ -742,6 +745,8 @@ class CamCatGraph:
                         for identifier, text in caption_corrections.items()
                         if identifier not in updated_ids
                     )
+                if not initial_edit:
+                    parsed = linked_source_audio_updates(project, parsed)
                 referenced = _referenced_source_ids(parsed)
                 existing_sources = {item.source_id for item in project.sources}
                 registrations = [

@@ -27,3 +27,29 @@ test("real rendered output and a reviewed version get the appropriate delivery a
   assert.equal(view.assistantStatus, "成片已生成");
   assert.equal(view.nextStep, "预览并下载交付成片");
 });
+
+test("retrieval keeps the uploaded source visible and selected by default", async () => {
+  const {combineEvidence} = await presentation();
+  const items = combineEvidence([{id: "uploaded", sourceVideoUrl: "earth.mp4"}],
+    [{id: "library", sourceVideoUrl: "flower.mp4"}]);
+  assert.deepEqual(items.map(item => [item.id, item.active]), [["uploaded", true], ["library", false]]);
+});
+
+test("an explicit library selection is preserved while the uploaded source remains available", async () => {
+  const {combineEvidence} = await presentation();
+  const items = combineEvidence([{id: "uploaded"}], [{id: "library"}], "library");
+  assert.deepEqual(items.map(item => [item.id, item.active]), [["uploaded", false], ["library", true]]);
+});
+
+test("stale selection recovers to the uploaded source and duplicate source data is retained", async () => {
+  const {combineEvidence} = await presentation();
+  const items = combineEvidence([{id: "source", sourceVideoUrl: "original.mp4"}],
+    [{id: "source", sourceVideoUrl: "candidate.mp4"}], "expired");
+  assert.deepEqual(items, [{id: "source", sourceVideoUrl: "original.mp4", active: true}]);
+});
+
+test("library-only sessions retain a default candidate and empty sessions remain empty", async () => {
+  const {combineEvidence} = await presentation();
+  assert.deepEqual(combineEvidence([], [{id: "library"}]), [{id: "library", active: true}]);
+  assert.deepEqual(combineEvidence([], []), []);
+});
