@@ -214,6 +214,9 @@ def test_deterministic_failure_is_terminal_without_automatic_retry() -> None:
 
 
 def test_render_failure_categories_control_retry_semantics() -> None:
+    from camcat.rendering.process import EncoderTimeout
+
+    assert _failure_category(EncoderTimeout("budget exceeded")).value == "execution_timeout"
     assert _failure_category(MediaFingerprintError("changed")) == FailureCategory.ARTIFACT_DRIFT
     assert _failure_category(OutputVerificationError("bad frames")) == (
         FailureCategory.OUTPUT_VERIFICATION

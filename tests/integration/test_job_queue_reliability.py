@@ -241,3 +241,28 @@ def test_localization_claims_immediately_while_analysis_has_an_active_lease(
         repository.succeed(selected, {})
         db.delete(selected)
         db.commit()
+
+
+def test_late_cancel_is_not_overwritten_by_success(queue_sessions):
+    with queue_sessions() as db:
+        repository = JobRepository(db)
+        job = repository.enqueue(owner_id=f"late-cancel-{uuid4()}", kind=JobKind.RENDER, payload={})
+        job.available_at = utcnow() - timedelta(days=365)
+        db.commit()
+        active = repository.claim_next(worker_id="cancel-owner", lease_seconds=60)
+        assert active is not None and active.id == job.id
+        with queue_sessions() as other:
+            JobRepository(other).cancel(other.get(Job, active.id))
+        repository.succeed(active, {"rendered": True})
+        assert active.status == JobStatus.CANCELLED
+        assert active.lease_expires_at is None
+
+
+def test_completed_job_cancel_preserves_success(queue_sessions):
+    with queue_sessions() as db:
+        repository = JobRepository(db)
+        job = repository.enqueue(owner_id=f"completed-{uuid4()}", kind=JobKind.RENDER, payload={})
+        repository.succeed(job, {"rendered": True})
+        repository.cancel(job)
+        assert job.status == JobStatus.SUCCEEDED
+        assert job.cancel_requested_at is None

@@ -1,0 +1,79 @@
+{
+  "state": "completed",
+  "input": "NASA-derived 30 second Chinese narrated demo; see docs/demos/README.md",
+  "input_sha256": "0d70c1468567c134ab66ca3c4aaf678b535776aea5b925c40ed992131c4e7b88",
+  "scope": "Same source, timestamps and 512px width; wall time includes sampling and JPEG writes, excludes Python startup and metadata probing. CLI uses FFmpeg q=2, native uses Pillow quality=95. Versions/encoding differ; pixel MAE is reported separately.",
+  "frames": 12,
+  "repeats": 3,
+  "median_seconds": {
+    "ffmpeg": 5.6464510057121515,
+    "native": 1.0335466228425503
+  },
+  "latency_reduction_percent": 81.7,
+  "jpeg_mean_absolute_pixel_difference": 2.9163622444058643,
+  "native_ffmpeg_version": "5.1.9-0+deb12u1",
+  "cli_ffmpeg_version": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "rss_sampling_interval_seconds": 0.01,
+  "measurements": [
+    {
+      "backend": "ffmpeg",
+      "seconds": 5.6464510057121515,
+      "frames_per_second": 2.125228747732048,
+      "cpu_seconds_self_and_children": 7.692333,
+      "self_peak_rss_mib": 83.36328125,
+      "largest_child_peak_rss_mib": 94.32421875,
+      "repeat": 0,
+      "sampled_process_tree_peak_rss_mib": 130.41
+    },
+    {
+      "backend": "native",
+      "seconds": 1.0335466228425503,
+      "frames_per_second": 11.610506710376113,
+      "cpu_seconds_self_and_children": 2.2745159999999998,
+      "self_peak_rss_mib": 88.45703125,
+      "largest_child_peak_rss_mib": 55.328125,
+      "repeat": 0,
+      "sampled_process_tree_peak_rss_mib": 89.195
+    },
+    {
+      "backend": "native",
+      "seconds": 1.1630712486803532,
+      "frames_per_second": 10.317510654326181,
+      "cpu_seconds_self_and_children": 2.44734,
+      "self_peak_rss_mib": 88.296875,
+      "largest_child_peak_rss_mib": 55.32421875,
+      "repeat": 1,
+      "sampled_process_tree_peak_rss_mib": 87.984
+    },
+    {
+      "backend": "ffmpeg",
+      "seconds": 5.788690337911248,
+      "frames_per_second": 2.07300776160191,
+      "cpu_seconds_self_and_children": 7.677696,
+      "self_peak_rss_mib": 83.36328125,
+      "largest_child_peak_rss_mib": 94.46875,
+      "repeat": 1,
+      "sampled_process_tree_peak_rss_mib": 130.879
+    },
+    {
+      "backend": "ffmpeg",
+      "seconds": 5.401194926351309,
+      "frames_per_second": 2.221730591772293,
+      "cpu_seconds_self_and_children": 7.24071,
+      "self_peak_rss_mib": 83.36328125,
+      "largest_child_peak_rss_mib": 94.625,
+      "repeat": 2,
+      "sampled_process_tree_peak_rss_mib": 130.945
+    },
+    {
+      "backend": "native",
+      "seconds": 0.9254679717123508,
+      "frames_per_second": 12.966413065378104,
+      "cpu_seconds_self_and_children": 2.136157,
+      "self_peak_rss_mib": 88.47265625,
+      "largest_child_peak_rss_mib": 55.3984375,
+      "repeat": 2,
+      "sampled_process_tree_peak_rss_mib": 90.07
+    }
+  ]
+}

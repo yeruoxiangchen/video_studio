@@ -34,7 +34,7 @@ from camcat.agent.sequence import (
 from camcat.agent.storyboard import StoryboardSlot
 from camcat.config import Settings
 from camcat.domain.project import EditingProjectV2
-from camcat.media.ffmpeg import extract_analysis_frame, probe
+from camcat.media.ffmpeg import extract_analysis_frames, probe
 from camcat.services.object_store import ObjectStore
 from camcat.services.providers import (
     ProviderError,
@@ -235,11 +235,18 @@ class NativeNarrativePlanner:
                 self.object_store.download_file(registry[source_id].storage_key, source)
                 metadata = probe(source)
                 duration = metadata.video_duration or metadata.duration
-                sampled = []
-                for j, at in enumerate(narrative_sample_times(duration)):
-                    image = Path(work) / f"frames-{index:03}" / f"{j:02}.jpg"
-                    extract_analysis_frame(source, image, at=at)
-                    sampled.append((image, at))
+                sample_times = narrative_sample_times(duration)
+                images = [
+                    Path(work) / f"frames-{index:03}" / f"{j:02}.jpg"
+                    for j in range(len(sample_times))
+                ]
+                actual_times = extract_analysis_frames(
+                    source,
+                    images,
+                    times=sample_times,
+                    backend=self.settings.media_frame_backend,
+                )
+                sampled = list(zip(images, actual_times, strict=True))
                 frames[name] = sampled
                 content = [
                     {

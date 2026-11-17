@@ -102,12 +102,18 @@ def test_short_captions_keep_the_requested_lower_positions_when_they_fit():
 
     project = caption_project(1920, 1080)
     source, target = project.timeline.tracks
-    source.segments[0] = source.segments[0].model_copy(update={
-        "text": "欢迎来到博物馆。", "style": TextStyle(y=0.745),
-    })
-    target.segments[0] = target.segments[0].model_copy(update={
-        "text": "Welcome to the museum.", "style": TextStyle(y=0.815),
-    })
+    source.segments[0] = source.segments[0].model_copy(
+        update={
+            "text": "欢迎来到博物馆。",
+            "style": TextStyle(y=0.745),
+        }
+    )
+    target.segments[0] = target.segments[0].model_copy(
+        update={
+            "text": "Welcome to the museum.",
+            "style": TextStyle(y=0.815),
+        }
+    )
     shown = caption_presentation(project)
     assert shown["target"][0].style.y == 0.815
     assert shown["source"][0].style.y >= 0.74

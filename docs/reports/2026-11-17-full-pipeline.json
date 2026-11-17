@@ -1,0 +1,155 @@
+{
+  "state": "passed",
+  "frame_backend": "native",
+  "journeys": 1,
+  "scope": "Warm services; actual browser upload, source analysis, editing Agent, subtitle timing review, translation, speech, delivery render, playback and download. Wall time includes automated UI interactions; no cross-run percentile is inferred.",
+  "upload_to_download_seconds": 260.727,
+  "phases_seconds": {
+    "source_upload_and_analysis": 70.97,
+    "agent_planning": 90.885,
+    "translation_and_speech": 35.764,
+    "render_and_validation": 58.047,
+    "download": 2.053
+  },
+  "jobs": [
+    {
+      "job_id": "14a5e075-4a62-45de-84cb-08162b5b7e30",
+      "kind": "analyze_source",
+      "attempts": 1,
+      "queue_seconds": 0.3,
+      "execution_seconds": 69.498,
+      "total_seconds": 69.798
+    },
+    {
+      "job_id": "39ed9285-bf72-438f-8601-92172cfe237e",
+      "kind": "translate_subtitles",
+      "attempts": 1,
+      "queue_seconds": 0.679,
+      "execution_seconds": 10.987,
+      "total_seconds": 11.666
+    },
+    {
+      "job_id": "0238b67b-e7e3-4672-9715-bbc46e74b8dc",
+      "kind": "dub_subtitles",
+      "attempts": 1,
+      "queue_seconds": 0.087,
+      "execution_seconds": 5.954,
+      "total_seconds": 6.041
+    },
+    {
+      "job_id": "0710530a-4c4d-4c48-9a61-f0077d934656",
+      "kind": "render",
+      "attempts": 1,
+      "queue_seconds": 0.382,
+      "execution_seconds": 55.616,
+      "total_seconds": 55.998
+    }
+  ],
+  "agent_nodes": [
+    {
+      "node_name": "understand_requirement",
+      "status": "completed",
+      "duration_ms": 32441.69,
+      "provider_calls": [
+        {
+          "model": "video-studio-planning",
+          "usage": {
+            "total_tokens": 1763,
+            "prompt_tokens": 472,
+            "completion_tokens": 1291
+          },
+          "attempt": 1,
+          "endpoint": "/v1/chat/completions",
+          "latency_ms": 32430.12,
+          "request_id": "c8417a42ae094678888cb499764bfbfb",
+          "status_code": 200,
+          "finish_reason": "stop",
+          "schema_sha256": "01a6750c1f092d0a0dd70bb522cb477ecd15236d1e3479eef1297c2732950737",
+          "gateway_request_id": "01a1e9bb-e1aa-7b09-a401-b72a44b43509"
+        }
+      ]
+    },
+    {
+      "node_name": "plan_query",
+      "status": "completed",
+      "duration_ms": 0.04,
+      "provider_calls": []
+    },
+    {
+      "node_name": "retrieve_material",
+      "status": "completed",
+      "duration_ms": 1794.39,
+      "provider_calls": [
+        {
+          "model": "Qwen/Qwen3-VL-Embedding-8B",
+          "attempt": 1,
+          "endpoint": "/v1/embeddings",
+          "latency_ms": 79.99,
+          "request_id": "18c8ab55e7c0411b80c6e3f21c2a6076",
+          "status_code": 200,
+          "schema_sha256": null
+        }
+      ]
+    },
+    {
+      "node_name": "generate_edit_plan",
+      "status": "completed",
+      "duration_ms": 55438.85,
+      "provider_calls": [
+        {
+          "model": "video-studio-planning",
+          "usage": {
+            "total_tokens": 6775,
+            "prompt_tokens": 4690,
+            "completion_tokens": 2085
+          },
+          "attempt": 1,
+          "endpoint": "/v1/chat/completions",
+          "latency_ms": 55388.67,
+          "request_id": "d82812c960c74dca88a6276e54794f64",
+          "status_code": 200,
+          "finish_reason": "stop",
+          "schema_sha256": "eda10dc12456bddb5002962762b316a743a5c960fc5a6afc196b0bc34829b02a",
+          "gateway_request_id": "01a1e9bc-6796-7d00-a2bc-2e362ee02979"
+        }
+      ]
+    },
+    {
+      "node_name": "generate_subtitles",
+      "status": "completed",
+      "duration_ms": 35.59,
+      "provider_calls": []
+    },
+    {
+      "node_name": "validate_project",
+      "status": "completed",
+      "duration_ms": 33.01,
+      "provider_calls": []
+    },
+    {
+      "node_name": "persistence",
+      "status": "completed",
+      "duration_ms": 83.62,
+      "provider_calls": []
+    }
+  ],
+  "render_verification": {
+    "duration_seconds": 30,
+    "width": 1920,
+    "height": 1080,
+    "actual_frames": 900,
+    "expected_frames": 900,
+    "frame_delta": 0,
+    "duration_delta_seconds": 0,
+    "full_decode_succeeds": true,
+    "output_sha256": "c9bdd35f552b479eeb5b228490a0aa1cb61ad177480d7e0f18e0fb6d7a9fe2a1",
+    "encoder": {
+      "pid": 33,
+      "state": "completed",
+      "error_type": null,
+      "returncode": 0,
+      "elapsed_seconds": 43.23346,
+      "process_group_owned": true
+    }
+  }
+}

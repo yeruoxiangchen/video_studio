@@ -203,7 +203,9 @@ def normalize_speech(
             "-i",
             str(source),
             "-af",
-            f"atempo={fit.speed:.12g},apad,atrim=duration={samples / 48000:.12f}",
+            # Trim on the output sample clock, after resampling. Trimming on the
+            # Piper/input clock can lose one output sample for fractional windows.
+            f"aresample=48000,atempo={fit.speed:.12g},apad,atrim=end_sample={samples}",
             "-ar",
             "48000",
             "-ac",

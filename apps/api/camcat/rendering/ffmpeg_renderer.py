@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
-import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 from camcat.rendering.backend import RenderResult
 from camcat.rendering.build import RenderBuild, verify_materialized_sources, verify_render_build
 from camcat.rendering.materialization import MaterializedSources
+from camcat.rendering.process import EncoderFailed, run_encoder
 
 
 class FFmpegRenderError(RuntimeError):
@@ -14,10 +15,16 @@ class FFmpegRenderError(RuntimeError):
 
 
 class FFmpegRenderer:
-    VERSION = "camcat-ffmpeg-renderer/v2-localization-3"
+    VERSION = "camcat-ffmpeg-renderer/v2-localization-4"
 
     def render(
-        self, build: RenderBuild, sources: MaterializedSources, output: Path
+        self,
+        build: RenderBuild,
+        sources: MaterializedSources,
+        output: Path,
+        *,
+        heartbeat: Callable[[], None] | None = None,
+        timeout_seconds: float = 900,
     ) -> RenderResult:
         build = verify_render_build(build.root)
         verify_materialized_sources(build, sources)
@@ -252,12 +259,24 @@ class FFmpegRenderer:
         (output.parent / "renderer-command.json").write_text(
             json.dumps(args, ensure_ascii=False), encoding="utf-8"
         )
-        result = subprocess.run(args, capture_output=True, text=True, check=False)
-        if result.returncode != 0:
-            (output.parent / "renderer-stderr.log").write_text(
-                result.stderr[-1_000_000:], encoding="utf-8"
+        error_log = output.parent / "renderer-stderr.log"
+        try:
+            run_encoder(
+                args,
+                stderr=error_log,
+                record=output.parent / "renderer-process.json",
+                heartbeat=heartbeat,
+                timeout_seconds=timeout_seconds,
             )
-            raise FFmpegRenderError(f"FFmpeg render failed: {result.stderr[-4000:]}")
+        except EncoderFailed as error:
+            output.unlink(missing_ok=True)
+            with error_log.open("rb") as stream:
+                stream.seek(max(0, error_log.stat().st_size - 4000))
+                details = stream.read().decode("utf-8", errors="replace")
+            raise FFmpegRenderError(f"FFmpeg render failed: {details}") from error
+        except BaseException:
+            output.unlink(missing_ok=True)
+            raise
         return RenderResult(output=output, renderer=self.VERSION, command=args)
 
 

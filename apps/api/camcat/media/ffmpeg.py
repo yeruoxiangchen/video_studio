@@ -210,6 +210,42 @@ def extract_audio(
     )
 
 
+def extract_analysis_frames(
+    source: Path,
+    targets: list[Path],
+    *,
+    times: list[float],
+    width: int = 512,
+    backend: str = "native",
+) -> list[float]:
+    """Extract a bounded batch with an explicitly selected decoder backend."""
+    if len(targets) != len(times):
+        raise ValueError("frame target and timestamp counts differ")
+    if backend == "ffmpeg":
+        if width != 512:
+            raise ValueError("legacy analysis sampling uses width 512")
+        for target, at in zip(targets, times, strict=True):
+            extract_analysis_frame(source, target, at=at)
+        return times
+    if backend != "native":
+        raise ValueError("unknown frame sampling backend")
+    from PIL import Image
+
+    from camcat.media.native import sample_frames
+
+    observed: list[float] = []
+    for offset in range(0, len(times), 16):
+        try:
+            frames = sample_frames(source, times[offset : offset + 16], width=width)
+        except (RuntimeError, ValueError) as error:
+            raise MediaCommandError(str(error)) from error
+        for target, frame in zip(targets[offset : offset + 16], frames, strict=True):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            Image.fromarray(frame.pixels).save(target, format="JPEG", quality=95, subsampling=0)
+            observed.append(frame.seconds)
+    return observed
+
+
 def _input_window(source: Path, *, start: float, end: float | None) -> list[str]:
     if start < 0 or (end is not None and end <= start):
         raise ValueError("media window must have nonnegative start and end > start")

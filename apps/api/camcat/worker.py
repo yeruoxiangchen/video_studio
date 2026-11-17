@@ -22,6 +22,7 @@ from camcat.localization.plans import validate_dubbed_state
 from camcat.localization.service import LocalizationService
 from camcat.media.ffmpeg import (
     detect_scene_cuts,
+    extract_analysis_frames,
     extract_audio,
     extract_clip,
     extract_thumbnail,
@@ -50,6 +51,7 @@ from camcat.rendering.doctor import RendererCapabilityProfile, inspect_capabilit
 from camcat.rendering.ffmpeg_renderer import FFmpegRenderer, FFmpegRenderError
 from camcat.rendering.fingerprint import MediaFingerprintError, fingerprint_media
 from camcat.rendering.materialization import MaterializedSources
+from camcat.rendering.process import EncoderTimeout
 from camcat.rendering.verification import OutputVerificationError, verify_output
 from camcat.repositories import JobRepository, sanitize_job_error
 from camcat.retrieval.milvus_store import MilvusSegmentStore
@@ -387,6 +389,30 @@ class Worker:
             jobs.checkpoint(job, "source_visual_ready", {"media_index": media_index})
             analyzed_media.append(enriched)
 
+            frame_backend = getattr(self.settings, "media_frame_backend", "ffmpeg")
+            if frame_backend == "native":
+                frame_targets = [
+                    job_dir / "thumbnails" / f"{item['media_id']}-{i}.jpg"
+                    for i in range(len(boundaries))
+                ]
+                frame_times = [
+                    min(
+                        (b.start + b.end) / 2,
+                        max(0, (metadata.video_duration or metadata.duration) - 0.05),
+                    )
+                    for b in boundaries
+                ]
+                extract_analysis_frames(source, frame_targets, times=frame_times, width=640)
+                jobs.checkpoint(
+                    job,
+                    "source_frames_ready",
+                    {
+                        "media_index": media_index,
+                        "frame_count": len(frame_targets),
+                        "frame_backend": frame_backend,
+                    },
+                )
+
             for boundary_index, boundary in enumerate(boundaries):
                 source_segment_id = f"source:{item['media_id']}:{boundary_index + 1}"
                 thumbnail = job_dir / "thumbnails" / f"{item['media_id']}-{boundary_index}.jpg"
@@ -397,7 +423,8 @@ class Worker:
                 )
                 # Analysis only needs bounded reads of the original. Encoding a disposable
                 # full-resolution intermediate adds latency and an extra lossy generation.
-                extract_thumbnail(source, thumbnail, at=(boundary.start + boundary.end) / 2)
+                if frame_backend == "ffmpeg":
+                    extract_thumbnail(source, thumbnail, at=(boundary.start + boundary.end) / 2)
                 transcript = ""
                 transcript_cues: list[dict[str, Any]] = []
                 transcription: dict[str, Any] = {}
@@ -468,6 +495,7 @@ class Worker:
 
         return {
             "batch_id": str(job.payload["batch_id"]),
+            "frame_backend": getattr(self.settings, "media_frame_backend", "ffmpeg"),
             "expires_at": str(job.payload["expires_at"]),
             "source_media": analyzed_media,
             "source_segments": analyzed_segments,
@@ -731,7 +759,15 @@ class Worker:
 
         output = job_dir / "camcat-render.mp4"
         jobs.checkpoint(job, "render_started")
-        FFmpegRenderer().render(build, sources, output)
+        FFmpegRenderer().render(
+            build,
+            sources,
+            output,
+            heartbeat=lambda: jobs.update_progress(
+                job, max(job.progress, 0.3), lease_seconds=self.settings.job_lease_seconds
+            ),
+            timeout_seconds=self.settings.render_timeout_seconds,
+        )
         jobs.checkpoint(job, "encoded", {"output_bytes": output.stat().st_size})
         try:
             verification = verify_output(build, output)
@@ -802,6 +838,7 @@ class Worker:
             "frame_delta": verification.frame_delta,
             "duration_delta_seconds": verification.duration_delta_seconds,
             "full_decode_succeeds": verification.full_decode_succeeds,
+            "encoder": json.loads((job_dir / "renderer-process.json").read_text()),
         }
 
     def _download_render_source(self, storage_key: str, target: Path) -> None:
@@ -856,6 +893,7 @@ def _safe_runtime_name(value: str) -> str:
 
 
 class FailureCategory(StrEnum):
+    EXECUTION_TIMEOUT = "execution_timeout"
     RETRYABLE_INFRASTRUCTURE = "retryable_infrastructure_failure"
     DETERMINISTIC_VALIDATION = "deterministic_validation_failure"
     UNSUPPORTED_FEATURE = "unsupported_feature"
@@ -864,6 +902,8 @@ class FailureCategory(StrEnum):
 
 
 def _failure_category(error: Exception) -> FailureCategory:
+    if isinstance(error, EncoderTimeout):
+        return FailureCategory.EXECUTION_TIMEOUT
     if isinstance(error, ProviderError) and not error.retryable:
         return FailureCategory.DETERMINISTIC_VALIDATION
     if isinstance(error, MediaFingerprintError):

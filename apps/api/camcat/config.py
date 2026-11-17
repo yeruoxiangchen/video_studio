@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     worker_id: str = "worker-1"
     worker_role: Literal["all", "control", "analysis", "localization", "render"] = "all"
     job_lease_seconds: int = 600
+    media_frame_backend: Literal["ffmpeg", "native"] = "ffmpeg"
+    render_timeout_seconds: float = Field(default=900, gt=0, le=7200)
 
     @field_validator("embedding_dimension")
     @classmethod

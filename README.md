@@ -28,14 +28,18 @@
 - 字幕、配音、审校及视频绑定具体版本，原文或译文修改后显示需要重新处理的环节。
 - 增加可试听、可确认的业务交付流程，真实渲染、完整解码验证、打包与下载。
 - 拆分分析、译制、渲染三路 Worker，提供取消、失败记录、重试和运行监视。
+- C++/FFmpeg 批量抽帧通过 pybind11 接入原片分析和叙事采样；支持时间戳、旋转和有界内存。
+- 渲染期间持续更新任务心跳，取消或超时会终止并回收该次 FFmpeg 进程组，保存执行记录。
 
 聊天生成草稿不会代替人工交付审校。字幕窗口过短时，配音任务明确报错，用户可修改译文或时间后重新提交。
 
 ## 技术栈
 
-React / TypeScript / Vite、FastAPI / Pydantic、LangGraph、PostgreSQL / SQLAlchemy / Alembic、Milvus、MinIO、FFmpeg、Docker Compose。
+React / TypeScript / Vite、Python / FastAPI / Pydantic、C++17 / pybind11、LangGraph、PostgreSQL / SQLAlchemy / Alembic、Milvus、MinIO、FFmpeg、Docker Compose。
 
 当前验证使用全本地模型：Qwen 多模态嵌入与重排、Qwen 视觉分析及剪辑规划、faster-whisper 多语言识别、Qwen 翻译、Piper 英文配音。模型、权重版本和部署角色分别记录在 `infra/` 与[部署说明](docs/local-deployment.md)，权重不随源码分发。
+
+[C++ 媒体预处理、运行计时与任务回收](docs/native-pipeline-performance.md)
 
 ## Go 网关接入
 

@@ -12,8 +12,9 @@ from camcat.worker import Worker
 
 
 @pytest.mark.parametrize("visual_override", [None, "unit-separate-visual"])
+@pytest.mark.parametrize("backend", ["ffmpeg", "native"])
 def test_source_analysis_reads_original_windows_and_reports_monotonic_progress(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, visual_override: str | None
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, visual_override: str | None, backend: str
 ) -> None:
     worker = Worker.__new__(Worker)
     worker.settings = SimpleNamespace(
@@ -22,6 +23,7 @@ def test_source_analysis_reads_original_windows_and_reports_monotonic_progress(
         segment_minimum_seconds=3.0,
         llm_model="unit-visual-model",
         visual_analysis_model=visual_override,
+        media_frame_backend=backend,
     )
     worker.object_store = Mock()
 
@@ -52,6 +54,8 @@ def test_source_analysis_reads_original_windows_and_reports_monotonic_progress(
     monkeypatch.setattr(worker_module, "extract_clip", clip)
     monkeypatch.setattr(worker_module, "extract_audio", audio)
     monkeypatch.setattr(worker_module, "extract_thumbnail", thumbnail)
+    frames = Mock()
+    monkeypatch.setattr(worker_module, "extract_analysis_frames", frames)
     monkeypatch.setattr(worker_module, "measure_visual_quality", quality)
     job = Job(
         id=uuid4(),
@@ -76,6 +80,7 @@ def test_source_analysis_reads_original_windows_and_reports_monotonic_progress(
 
     jobs.update_progress.side_effect = update_progress
     result = worker.analyze_source(job, jobs)
+    assert result["frame_backend"] == backend
 
     clip.assert_not_called()
     source_dir = tmp_path / "jobs" / str(job.id) / "sources"
@@ -84,7 +89,12 @@ def test_source_analysis_reads_original_windows_and_reports_monotonic_progress(
         for name in ("one", "two")
         for start in (0, 5)
     ]
-    assert [call.kwargs["at"] for call in thumbnail.call_args_list] == [2.5, 7.5, 2.5, 7.5]
+    if backend == "ffmpeg":
+        assert [call.kwargs["at"] for call in thumbnail.call_args_list] == [2.5, 7.5, 2.5, 7.5]
+        frames.assert_not_called()
+    else:
+        thumbnail.assert_not_called()
+        assert [call.kwargs["times"] for call in frames.call_args_list] == [[2.5, 7.5]] * 2
     assert [(call.args[0], call.kwargs) for call in quality.call_args_list] == [
         (call.args[0], call.kwargs) for call in audio.call_args_list
     ]

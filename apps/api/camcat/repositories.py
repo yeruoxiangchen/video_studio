@@ -533,9 +533,13 @@ class JobRepository:
         self.update_progress(job, job.progress, checkpoint=checkpoint)
 
     def succeed(self, job: Job, result: dict[str, Any]) -> None:
-        job.status = JobStatus.SUCCEEDED
-        job.progress = 1.0
-        job.result = result
+        self.db.refresh(job, with_for_update=True)
+        if job.cancel_requested_at is not None:
+            job.status = JobStatus.CANCELLED
+        else:
+            job.status = JobStatus.SUCCEEDED
+            job.progress = 1.0
+            job.result = result
         job.finished_at = utcnow()
         job.lease_expires_at = None
         self.db.commit()
@@ -572,6 +576,10 @@ class JobRepository:
         self.db.commit()
 
     def cancel(self, job: Job) -> Job:
+        self.db.refresh(job, with_for_update=True)
+        if job.status not in {JobStatus.QUEUED, JobStatus.RUNNING}:
+            self.db.commit()
+            return job
         now = utcnow()
         job.cancel_requested_at = now
         if job.status == JobStatus.QUEUED:

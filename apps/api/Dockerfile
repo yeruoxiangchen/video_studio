@@ -1,4 +1,13 @@
 ARG PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.12-slim-bookworm
+FROM ${PYTHON_IMAGE} AS native-media-build
+ENV CMAKE_BUILD_PARALLEL_LEVEL=2 PIP_NO_CACHE_DIR=1
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ cmake pkg-config \
+       libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY native/media /native-media
+RUN pip wheel --no-deps --wheel-dir /native-wheels /native-media
+
 FROM ${PYTHON_IMAGE}
 
 ARG CAMCAT_PREBUILT_RUNTIME=false
@@ -15,6 +24,8 @@ RUN if [ "$CAMCAT_PREBUILT_RUNTIME" != "true" ]; then \
     fi
 
 WORKDIR /app
+COPY --from=native-media-build /native-wheels /native-wheels
+RUN pip install --no-deps /native-wheels/*.whl && rm -rf /native-wheels
 COPY pyproject.toml requirements.studio.txt requirements.planning.txt requirements.presentation.txt alembic.ini ./
 ARG CAMCAT_INSTALL_DEV=false
 ARG CAMCAT_INSTALL_TTS=false
