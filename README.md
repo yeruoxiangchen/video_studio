@@ -11,7 +11,6 @@
 | [![剪辑工作区显示地球科普视频、时间线和修改指令](docs/demos/editing-workspace.png)](docs/demos/04-editing-workflow.mp4) | [![译制工作区显示原片字幕、译文和配音时间线](docs/demos/workstation.png)](docs/demos/01-agent-workflow.mp4) |
 | [观看剪辑过程](docs/demos/04-editing-workflow.mp4) · [对比原片和两版成片](docs/demos/05-editing-comparison.mp4) · [9 秒中文成片](docs/demos/06-edited-chinese.mp4) | [观看对话译制](docs/demos/01-agent-workflow.mp4) · [观看面板操作](docs/demos/02-panel-workflow.mp4) · [30 秒英语配音成片](docs/demos/03-earth-english.mp4) |
 
-项目基于 [CamCat-Agentic-Cut-Platform](https://github.com/Kehan-Peng/CamCat-Agentic-Cut-Platform) 的真实源码扩展，上游固定提交为 `1e8d0492a9793f47d9a69362378fb2535f386b52`。保留上游 Git 历史及 [MIT 许可](LICENSE)，复用其原片分析、素材检索、LangGraph 剪辑、版本管理与 FFmpeg 渲染能力。
 
 ## 使用方式
 
